@@ -67,7 +67,7 @@
       <h3 style="margin-top:16px">3) Parâmetros</h3>
       <div class="row">
         <div><label>Horizonte (anos)</label><input id="years" type="number" value="10" step="1" min="1"></div>
-        <div><label>Caminhos (Monte Carlo)</label><input id="npaths" type="number" value="5000" step="100" min="100" max="50000"></div>
+        <div><label>Caminhos (Monte Carlo)</label><input id="npaths" type="number" value="5000" step="100" min="10" max="50000"></div>
         <div><label>Correlação média</label><input id="rho" type="number" value="0.2" step="0.05" min="-0.9" max="0.95"></div>
         <div><label>Risk-free a.a. (%)</label><input id="rf" type="number" value="6" step="0.1"></div>
       </div>
@@ -343,7 +343,7 @@ function drawCharts(xs, sampled, finals){
 function captureParams(){
   return {
     years: parseInt($("years").value)||10,
-    npaths: clamp(parseInt($("npaths").value)||5000, 100, 50000),
+    npaths: clamp(parseInt($("npaths").value)||5000, 10, 50000),
     rho: clamp(parseFloat($("rho").value)||0.2, -0.9, 0.95),
     rf: parseFloat($("rf").value)||6,
     seed: parseInt($("seed").value)||12345,
@@ -373,7 +373,7 @@ function runSimulation(fast=false){
   worker.postMessage({
     assets: assets,
     years: params.years,
-    npaths: fast ? Math.max(1000, Math.floor(params.npaths/5)) : params.npaths,
+    npaths: fast ? Math.max(50, Math.floor(params.npaths/5)) : params.npaths,
     rho: params.rho,
     rfAA: params.rf/100,
     S0: params.S0,
