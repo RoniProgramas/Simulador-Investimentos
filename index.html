@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simulador de Carteiras — 100% Estático (GitHub Pages)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root { --bg:#0b132b; --panel:#13294b; --accent:#00c853; --text:#eef3ff; --muted:#9fb1c9; }
+  *{box-sizing:border-box} body{margin:0;background:linear-gradient(160deg,#0b132b,#13294b);color:var(--text);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial}
+  header{padding:22px 16px;text-align:center;border-bottom:1px solid #1d3768}
+  header h1{margin:0;font-size:1.7rem} header p{margin:.4rem 0 0;color:var(--muted)}
+  .container{max-width:1200px;margin:18px auto;padding:0 16px}
+  .grid{display:grid;grid-template-columns:2fr 3fr;gap:16px} .card{background:#0d1a36;border:1px solid #20345e;border-radius:14px;padding:14px}
+  .row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  label{display:block;font-size:.85rem;color:#cfe0ff;margin-bottom:4px}
+  input,select{width:100%;padding:9px;border-radius:10px;border:1px solid #2a4275;background:#0f1f3f;color:var(--text)}
+  table{width:100%;border-collapse:collapse;margin-top:8px} th,td{padding:8px;border-bottom:1px solid #20345e;font-size:.92rem}
+  th{color:#cfe0ff;text-align:left} td input{width:100%}
+  .btn{display:inline-block;background:var(--accent);color:#082316;font-weight:700;padding:10px 14px;border-radius:10px;text-decoration:none;cursor:pointer}
+  .small{font-size:.85rem;color:var(--muted)} .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:10px}
+  .metric{background:#0f1f3f;border:1px solid #20345e;border-radius:10px;padding:10px;text-align:center}
+  .metric .label{color:#9fb1c9;font-size:.8rem} .metric .value{font-size:1.05rem;font-weight:700;margin-top:4px}
+  @media (max-width:1024px){.grid{grid-template-columns:1fr}} canvas{background:#0c1733;border-radius:10px;border:1px solid #20345e}
+</style>
+</head>
+<body>
+<header>
+  <h1>📈 Simulador de Carteiras com Múltiplos Ativos</h1>
+  <p>Monte Carlo (GBM) com retorno esperado e volatilidade 1 ano por ativo — 100% estático (HTML + JS).</p>
+</header>
+
+<div class="container">
+  <div class="grid">
+    <!-- ESQUERDA: CONFIGURAÇÃO -->
+    <div class="card">
+      <h3>1) Ativos</h3>
+      <p class="small">Edite a <b>rentabilidade esperada (a.a. %)</b> e a <b>volatilidade 1y (a.a. %)</b> como quiser. Marque os ativos a usar e ajuste os pesos (normalizamos automaticamente).</p>
+
+      <div style="display:flex; gap:8px; align-items:center; margin:6px 0 10px">
+        <input type="file" id="csvFile" accept=".csv" />
+        <button class="btn" onclick="loadCSV()">Carregar CSV</button>
+        <span class="small">CSV: symbol,exp_return_aa,vol_1y_aa</span>
+      </div>
+
+      <table id="assetsTable">
+        <thead><tr>
+          <th>Usar</th><th>Ativo</th><th>Ret. a.a. (%)</th><th>Vol 1y a.a. (%)</th><th>Peso</th>
+        </tr></thead>
+        <tbody id="assetsBody"></tbody>
+      </table>
+
+      <h3 style="margin-top:16px">2) Parâmetros da Simulação</h3>
+      <div class="row">
+        <div>
+          <label>Horizonte (anos)</label>
+          <input id="years" type="number" value="10" step="1" min="1">
+        </div>
+        <div>
+          <label>Caminhos (Monte Carlo)</label>
+          <input id="npaths" type="number" value="2000" step="100" min="100" max="10000">
+        </div>
+        <div>
+          <label>Correlação média</label>
+          <input id="rho" type="number" value="0.2" step="0.05" min="-0.9" max="0.95">
+        </div>
+        <div>
+          <label>Risk-free a.a. (%)</label>
+          <input id="rf" type="number" value="6" step="0.1">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label>Seed (aleatoriedade)</label>
+          <input id="seed" type="number" value="12345" step="1">
+        </div>
+        <div>
+          <label>Valor inicial da carteira</label>
+          <input id="S0" type="number" value="10000" step="100">
+        </div>
+        <div>
+          <label>Aporte mensal (opcional)</label>
+          <input id="aport" type="number" value="0" step="50">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn" onclick="run()">Simular</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIREITA: RESULTADOS -->
+    <div class="card">
+      <h3>Resultados</h3>
+      <div class="metrics">
+        <div class="metric"><div class="label">Média final</div><div id="m_mean" class="value">—</div></div>
+        <div class="metric"><div class="label">Mediana final</div><div id="m_median" class="value">—</div></div>
+        <div class="metric"><div class="label">P5 / P95</div><div id="m_p" class="value">—</div></div>
+        <div class="metric"><div class="label">Ret. a.a. / Vol a.a.</div><div id="m_rv" class="value">—</div></div>
+        <div class="metric"><div class="label">Sharpe (aprox.)</div><div id="m_sharpe" class="value">—</div></div>
+      </div>
+
+      <div style="margin-top:12px">
+        <canvas id="chartPaths" height="260"></canvas>
+      </div>
+      <div style="height:12px"></div>
+      <div>
+        <canvas id="chartHist" height="200"></canvas>
+      </div>
+
+      <h4 style="margin-top:16px">Contribuição média por ativo (valor final)</h4>
+      <table id="byAsset">
+        <thead><tr><th>Ativo</th><th>Peso</th><th>Ret. a.a. (%)</th><th>Vol a.a. (%)</th><th>Valor final médio (R$)</th></tr></thead>
+        <tbody id="byAssetBody"></tbody>
+      </table>
+      <p class="small">Observação: a tabela usa a média sobre os caminhos simulados; correlação média aplicada via decomposição Cholesky de matriz com off-diagonais = ρ.</p>
+    </div>
+  </div>
+  <p class="small" style="margin-top:10px;text-align:center">Protótipo educacional — não é recomendação de investimento.</p>
+</div>
+
+<script>
+/* ========= Estado e dados ========= */
+let assets = [
+  {use:true,  symbol:"Ação Alta Vol", exp_return_aa:14, vol_1y_aa:35, weight:0.25},
+  {use:true,  symbol:"Ação Média",    exp_return_aa:10, vol_1y_aa:22, weight:0.25},
+  {use:false, symbol:"Cripto",         exp_return_aa:25, vol_1y_aa:80, weight:0.10},
+  {use:true,  symbol:"FII",            exp_return_aa:8,  vol_1y_aa:15, weight:0.20},
+  {use:true,  symbol:"Renda Fixa",     exp_return_aa:6,  vol_1y_aa:4,  weight:0.20}
+];
+const tbody = document.getElementById('assetsBody');
+
+function renderAssets(){
+  tbody.innerHTML = "";
+  assets.forEach((a, i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" ${a.use?'checked':''} onchange="updAsset(${i},'use',this.checked)"></td>
+      <td><input value="${a.symbol}" onchange="updAsset(${i},'symbol',this.value)"></td>
+      <td><input type="number" step="0.1" value="${a.exp_return_aa}" onchange="updAsset(${i},'exp_return_aa',parseFloat(this.value))"></td>
+      <td><input type="number" step="0.1" value="${a.vol_1y_aa}" onchange="updAsset(${i},'vol_1y_aa',parseFloat(this.value))"></td>
+      <td><input type="number" step="0.01" min="0" max="1" value="${a.weight}" onchange="updAsset(${i},'weight',parseFloat(this.value))"></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function updAsset(i, key, val){ assets[i][key] = val; }
+renderAssets();
+
+/* ========= CSV loader ========= */
+// Formato: symbol,exp_return_aa,vol_1y_aa
+function loadCSV(){
+  const f = document.getElementById('csvFile').files[0];
+  if(!f) return alert("Selecione um CSV.");
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const rows = e.target.result.trim().split(/\r?\n/);
+    const out = [];
+    for(let i=0;i<rows.length;i++){
+      if(!rows[i].trim()) continue;
+      const [symbol,er,vol] = rows[i].split(',').map(s=>s.trim());
+      if(i===0 && symbol.toLowerCase()==='symbol') continue; // cabeçalho
+      out.push({use:true, symbol, exp_return_aa:parseFloat(er), vol_1y_aa:parseFloat(vol), weight:(1/out.length)});
+    }
+    if(out.length){
+      // normaliza pesos uniformes
+      const w = 1/out.length;
+      out.forEach(o=>o.weight=w);
+      assets = out;
+      renderAssets();
+    }
+  };
+  reader.readAsText(f);
+}
+
+/* ========= Álgebra básica ========= */
+function dot(a,b){let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
+function transpose(M){const r=M.length,c=M[0].length;const T=Array.from({length:c},()=>Array(r).fill(0));for(let i=0;i<r;i++)for(let j=0;j<c;j++)T[j][i]=M[i][j];return T;}
+function mul(A,B){const r=A.length,c=A[0].length,c2=B[0].length;const R=Array.from({length:r},()=>Array(c2).fill(0));
+  for(let i=0;i<r;i++){for(let k=0;k<c;k++){const aik=A[i][k];for(let j=0;j<c2;j++){R[i][j]+=aik*B[k][j];}}} return R;}
+function cholesky(A){ // simétrica pos-def
+  const n=A.length, L=Array.from({length:n},()=>Array(n).fill(0));
+  for(let i=0;i<n;i++){
+    for(let j=0;j<=i;j++){
+      let sum = A[i][j];
+      for(let k=0;k<j;k++) sum -= L[i][k]*L[j][k];
+      if(i===j){ L[i][j] = Math.sqrt(Math.max(sum,1e-12)); }
+      else { L[i][j] = sum / L[j][j]; }
+    }
+  }
+  return L;
+}
+
+/* ========= RNG (seeded) ========= */
+function LCG(seed=12345){ let s = seed>>>0; return ()=>{ s = (1664525*s + 1013904223) >>> 0; return s / 4294967296; }; }
+function randn(rng){ const u1=Math.max(rng(),1e-12), u2=rng(); return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); }
+
+/* ========= Monte Carlo multi-ativo ========= */
+function run(){
+  // coleta parâmetros
+  const yrs   = Math.max(1, parseInt(document.getElementById('years').value||10));
+  const n     = yrs*12;
+  const Np    = Math.max(100, Math.min(10000, parseInt(document.getElementById('npaths').value||2000)));
+  const rho   = Math.max(-0.9, Math.min(0.95, parseFloat(document.getElementById('rho').value||0.2)));
+  const rfAA  = parseFloat(document.getElementById('rf').value||6)/100;
+  const S0    = parseFloat(document.getElementById('S0').value||10000);
+  const aport = parseFloat(document.getElementById('aport').value||0);
+  const seed  = parseInt(document.getElementById('seed').value||12345);
+
+  const sel   = assets.filter(a=>a.use);
+  if(sel.length===0) return alert("Selecione pelo menos um ativo.");
+  // normaliza pesos
+  let wsum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
+  if(wsum<=0){ wsum = sel.length; sel.forEach(a=>a.weight = 1/sel.length); }
+  sel.forEach(a=>a.weight = a.weight/wsum);
+
+  // parâmetros mensais por ativo
+  const muM = sel.map(a => Math.pow(1 + (a.exp_return_aa/100), 1/12) - 1);
+  const sigM = sel.map(a => (a.vol_1y_aa/100)/Math.sqrt(12));
+
+  // covariância mensal com off-diagonal = rho * σiσj
+  const k = sel.length;
+  const C = Array.from({length:k},()=>Array(k).fill(0));
+  for(let i=0;i<k;i++){
+    for(let j=0;j<k;j++){
+      C[i][j] = (i===j) ? sigM[i]*sigM[i] : rho * sigM[i]*sigM[j];
+    }
+  }
+  const L = cholesky(C);
+
+  // simulação
+  const rng = LCG(seed);
+  // paths da CARTEIRA (valor total) e contribuições por ativo (média ao final)
+  const paths = Array.from({length:n+1}, ()=>Array(Np).fill(0));
+  const finalByAsset = Array(k).fill(0); // média de valor final de cada ativo
+
+  for(let p=0;p<Np;p++){
+    // estado por ativo
+    const S = sel.map(()=>S0); // partimos como se cada ativo carregasse S0 (vamos ponderar pelos pesos no final)
+    // melhor: split S0 pelos pesos
+    for(let i=0;i<k;i++) S[i] = S0 * sel[i].weight;
+
+    paths[0][p] = S0;
+    for(let t=1;t<=n;t++){
+      // vetor normal correlato z = L * u (u ~ N(0,I))
+      const u = Array.from({length:k}, ()=>randn(rng));
+      const z = L.map(row => dot(row, u));
+      for(let i=0;i<k;i++){
+        const growth = Math.exp((muM[i] - 0.5*sigM[i]*sigM[i]) + sigM[i]*z[i]);
+        S[i] = S[i]*growth;
+      }
+      // aporte mensal distribuído pelos pesos (DCA)
+      if(aport>0){
+        for(let i=0;i<k;i++) S[i] += aport * sel[i].weight;
+      }
+      const total = S.reduce((s,x)=>s+x,0);
+      paths[t][p] = total;
+    }
+    for(let i=0;i<k;i++) finalByAsset[i] += S[i];
+  }
+  for(let i=0;i<k;i++) finalByAsset[i] /= Np;
+
+  // métricas
+  const finals = paths[paths.length-1];
+  const mean = arrMean(finals), med = arrMedian(finals), p5 = quantile(finals, 0.05), p95 = quantile(finals, 0.95);
+  // retorno/vol anualizados da carteira usando retornos mensais médios e desvios
+  const rets = [];
+  for(let t=1;t<paths.length;t++){
+    for(let p=0;p<Np;p++){
+      rets.push(paths[t][p]/paths[t-1][p] - 1);
+    }
+  }
+  const mean_m = arrMean(rets), std_m = arrStd(rets, mean_m);
+  const retAA = Math.pow(1+mean_m,12)-1, volAA = std_m*Math.sqrt(12);
+  const sharpe = (retAA - rfAA) / (volAA + 1e-9);
+
+  // métricas UI
+  document.getElementById('m_mean').innerText = "R$ " + fmt(mean);
+  document.getElementById('m_median').innerText = "R$ " + fmt(med);
+  document.getElementById('m_p').innerText = "P5: R$ " + fmt(p5) + " | P95: R$ " + fmt(p95);
+  document.getElementById('m_rv').innerText = (retAA*100).toFixed(2)+"% / "+(volAA*100).toFixed(2)+"%";
+  document.getElementById('m_sharpe').innerText = sharpe.toFixed(2);
+
+  // tabela por ativo
+  const body = document.getElementById('byAssetBody');
+  body.innerHTML = "";
+  sel.forEach((a,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${a.symbol}</td><td>${(a.weight*100).toFixed(1)}%</td>
+                    <td>${(+a.exp_return_aa).toFixed(2)}</td><td>${(+a.vol_1y_aa).toFixed(2)}</td>
+                    <td>R$ ${fmt(finalByAsset[i])}</td>`;
+    body.appendChild(tr);
+  });
+
+  // gráficos
+  drawCharts(paths, finals);
+}
+
+/* ========= Estatística básica ========= */
+function arrMean(a){return a.reduce((s,x)=>s+x,0)/a.length;}
+function arrMedian(a){const b=[...a].sort((x,y)=>x-y);const m=Math.floor(b.length/2);return b.length%2?b[m]:(b[m-1]+b[m])/2;}
+function quantile(a, q){const b=[...a].sort((x,y)=>x-y);const idx=Math.max(0,Math.min(b.length-1, Math.floor((b.length-1)*q)));return b[idx];}
+function arrStd(a, m){let s=0;for(const x of a){const d=x-m; s+=d*d;} return Math.sqrt(s/a.length);}
+
+/* ========= Gráficos ========= */
+let chartPaths=null, chartHist=null;
+function drawCharts(paths, finals){
+  const xs=[...Array(paths.length).keys()];
+  const Np = paths[0].length;
+  const sample = Math.min(50, Np);
+  const datasets=[];
+  for(let j=0;j<sample;j++){
+    const col = paths.map(row=>row[j]);
+    datasets.push({label:j===0?'Carteira':'',data:col,pointRadius:0,borderWidth:1,tension:.12});
+  }
+  const ctx1=document.getElementById('chartPaths').getContext('2d');
+  if(chartPaths) chartPaths.destroy();
+  chartPaths=new Chart(ctx1,{type:'line',data:{labels:xs,datasets},
+    options:{plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Mês'}},y:{title:{display:true,text:'Valor (R$)'}}}}});
+
+  // histograma
+  const bins = hist(finals, 30);
+  const ctx2=document.getElementById('chartHist').getContext('2d');
+  if(chartHist) chartHist.destroy();
+  chartHist=new Chart(ctx2,{type:'bar',data:{labels:bins.centers,datasets:[{label:'Valor final',data:bins.counts}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Valor final (faixa)'}},y:{title:{display:true,text:'Frequência'}}}}});
+}
+function hist(values, nbins){
+  const min=Math.min(...values), max=Math.max(...values);
+  const step=(max-min)/nbins || 1;
+  const counts=Array(nbins).fill(0), centers=[];
+  for(let i=0;i<nbins;i++) centers.push((min + (i+0.5)*step).toFixed(0));
+  for(const v of values){
+    let idx=Math.floor((v-min)/step);
+    if(idx===nbins) idx=nbins-1;
+    counts[idx]++;
+  }
+  return {counts, centers};
+}
+
+/* ========= Inicialização ========= */
+run(); // roda com dados demo ao abrir
+</script>
+</body>
+</html>
