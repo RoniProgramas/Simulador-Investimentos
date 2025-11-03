@@ -1,102 +1,401 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simulador de Investimentos — Ciclo 4</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      margin: 0;
-      background: linear-gradient(135deg, #0b3d91, #1b73e8);
-      color: white;
-      text-align: center;
-    }
-    header {
-      padding: 2rem;
-      background: rgba(0,0,0,0.3);
-    }
-    h1 {
-      font-size: 2.2rem;
-      margin-bottom: 0.5rem;
-    }
-    section {
-      max-width: 800px;
-      margin: 2rem auto;
-      background: rgba(255,255,255,0.1);
-      border-radius: 10px;
-      padding: 2rem;
-    }
-    a.button {
-      display: inline-block;
-      background: #00c853;
-      color: white;
-      padding: 1rem 2rem;
-      margin-top: 1rem;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: 600;
-      transition: background 0.3s;
-    }
-    a.button:hover {
-      background: #00a843;
-    }
-    footer {
-      font-size: 0.9rem;
-      margin-top: 3rem;
-      padding: 1rem;
-      background: rgba(0,0,0,0.3);
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simulador de Investimentos — Ciclo 4 (GitHub Pages)</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#0b132b; --panel:#1c2541; --accent:#00c853; --text:#e6e6e6; --muted:#9fb1c9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(160deg,#0b132b,#1c2541);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial}
+  header{padding:24px 16px;text-align:center;border-bottom:1px solid #22304f}
+  header h1{margin:0;font-size:1.8rem}
+  header p{margin:.25rem 0 0;color:var(--muted)}
+  .container{max-width:1100px;margin:20px auto;padding:0 16px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .tab-btn{border:1px solid #2c3e70;background:#152041;color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}
+  .tab-btn.active{background:var(--accent);border-color:var(--accent);color:#082316}
+  .panel{display:none;background:rgba(255,255,255,.05);border:1px solid #2c3e70;border-radius:14px;padding:16px}
+  .panel.active{display:block}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .card{background:rgba(255,255,255,.04);border:1px solid #2c3e70;border-radius:12px;padding:12px}
+  label{display:block;font-size:.9rem;color:#cfe0ff;margin-bottom:4px}
+  input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #2c3e70;background:#0f1833;color:var(--text)}
+  .muted{color:var(--muted);font-size:.9rem}
+  .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:8px}
+  .metric{background:#0f1833;border:1px solid #2c3e70;border-radius:12px;padding:10px;text-align:center}
+  .metric .label{color:#9fb1c9;font-size:.8rem}
+  .metric .value{font-size:1.1rem;font-weight:700;margin-top:4px}
+  .footer{margin:24px 0;color:#9fb1c9;text-align:center;font-size:.9rem}
+  @media (max-width:900px){.grid,.grid-3,.metrics{grid-template-columns:1fr}}
+  canvas{background:#0c1733;border-radius:10px;border:1px solid #22304f}
+  a.button{display:inline-block;background:var(--accent);color:#082316;font-weight:700;padding:10px 14px;border-radius:10px;text-decoration:none}
+</style>
 </head>
 <body>
-  <header>
-    <h1>📈 Simulador de Investimentos — Ciclo 4</h1>
-    <p>Projeto educacional que une matemática e finanças de forma prática.</p>
-  </header>
+<header>
+  <h1>📈 Simulador de Investimentos — Ciclo 4</h1>
+  <p>100% estático (HTML + JS). Hospede no GitHub Pages.</p>
+</header>
 
-  <section>
-    <h2>💡 Objetivo</h2>
-    <p>
-      Este projeto foi desenvolvido para promover <strong>educação financeira acessível</strong> e
-      demonstrar, na prática, como conceitos da <strong>matemática financeira</strong> influenciam as
-      decisões de investimento.
-    </p>
+<div class="container">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="compostos">🔢 Juros Compostos</button>
+    <button class="tab-btn" data-tab="carteira">📊 Carteira & Risco (GBM)</button>
+    <button class="tab-btn" data-tab="caotico">🧭 Caótico vs Guiado</button>
+    <button class="tab-btn" data-tab="sobre">ℹ️ Sobre</button>
+  </div>
+
+  <!-- Juros Compostos -->
+  <section id="compostos" class="panel active">
+    <div class="grid">
+      <div class="card">
+        <label>Capital inicial</label>
+        <input type="number" id="P0" value="1000" step="100" min="0"/>
+        <label style="margin-top:8px">Aporte mensal</label>
+        <input type="number" id="aporte" value="200" step="50" min="0"/>
+        <label style="margin-top:8px">Tempo (anos)</label>
+        <input type="number" id="anos" value="10" step="1" min="0"/>
+        <label style="margin-top:8px">Taxa esperada (a.a., %)</label>
+        <input type="number" id="taxaAA" value="10" step="0.5"/>
+        <label style="margin-top:8px">Taxa de administração (a.a., %, opcional)</label>
+        <input type="number" id="feeAA" value="0" step="0.1"/>
+        <label style="margin-top:8px">Volatilidade anual (opcional, %)</label>
+        <input type="number" id="volAA" value="0" step="0.5"/>
+        <div style="margin-top:12px">
+          <a class="button" href="javascript:void(0)" onclick="runCompostos()">Simular</a>
+        </div>
+        <p class="muted" style="margin-top:8px">Fórmula do montante com aportes mensais e capitalização mensal.</p>
+        <div class="metrics">
+          <div class="metric"><div class="label">Total aportado</div><div id="m_aporte" class="value">—</div></div>
+          <div class="metric"><div class="label">Saldo final</div><div id="m_final" class="value">—</div></div>
+          <div class="metric"><div class="label">Ganho líquido</div><div id="m_ganho" class="value">—</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <canvas id="chartCompostos" height="320"></canvas>
+      </div>
+    </div>
   </section>
 
-  <section>
-    <h2>🧭 Conceitos principais</h2>
-    <ul style="text-align:left; display:inline-block;">
-      <li>Juros compostos e valor do dinheiro no tempo</li>
-      <li>Risco, retorno e volatilidade</li>
-      <li>Correlação e diversificação</li>
-      <li>Cenário "Caótico vs Guiado"</li>
-    </ul>
+  <!-- Carteira -->
+  <section id="carteira" class="panel">
+    <div class="grid">
+      <div class="card">
+        <div class="grid-3">
+          <div>
+            <label>Ativo 1 — Retorno a.a. (%)</label><input id="r1" type="number" value="10" step="0.5">
+            <label>Vol a.a. (%)</label><input id="v1" type="number" value="20" step="0.5">
+            <label>Peso</label><input id="w1" type="number" value="0.34" step="0.01" min="0" max="1">
+          </div>
+          <div>
+            <label>Ativo 2 — Retorno a.a. (%)</label><input id="r2" type="number" value="8" step="0.5">
+            <label>Vol a.a. (%)</label><input id="v2" type="number" value="15" step="0.5">
+            <label>Peso</label><input id="w2" type="number" value="0.33" step="0.01" min="0" max="1">
+          </div>
+          <div>
+            <label>Ativo 3 — Retorno a.a. (%)</label><input id="r3" type="number" value="12" step="0.5">
+            <label>Vol a.a. (%)</label><input id="v3" type="number" value="25" step="0.5">
+            <label>Peso</label><input id="w3" type="number" value="0.33" step="0.01" min="0" max="1">
+          </div>
+        </div>
+        <label style="margin-top:8px">Correlação média</label>
+        <input id="corr" type="number" value="0.2" step="0.05" min="-0.9" max="0.95">
+        <label style="margin-top:8px">Horizonte (anos)</label>
+        <input id="horiz" type="number" value="10" step="1" min="1">
+        <label style="margin-top:8px">Caminhos Monte Carlo</label>
+        <input id="npaths" type="number" value="2000" step="100" min="100" max="10000">
+        <label style="margin-top:8px">Taxa livre de risco a.a. (%)</label>
+        <input id="rf" type="number" value="6" step="0.1">
+        <div style="margin-top:12px">
+          <a class="button" href="javascript:void(0)" onclick="runCarteira()">Simular</a>
+        </div>
+        <p class="muted" style="margin-top:8px">Simulação da <b>carteira</b> (não por ativo) via GBM.</p>
+        <div class="metrics">
+          <div class="metric"><div class="label">Retorno esp. a.a.</div><div id="m_ret" class="value">—</div></div>
+          <div class="metric"><div class="label">Vol a.a.</div><div id="m_vol" class="value">—</div></div>
+          <div class="metric"><div class="label">Sharpe (aprox.)</div><div id="m_sharpe" class="value">—</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <canvas id="chartCarteira" height="280"></canvas>
+        <div style="height:12px"></div>
+        <canvas id="chartHist" height="220"></canvas>
+      </div>
+    </div>
   </section>
 
-  <section>
-    <h2>🎯 Alinhamento com os ODS</h2>
-    <p>
-      O projeto contribui diretamente para os <strong>Objetivos de Desenvolvimento Sustentável</strong>:
-    </p>
-    <ul style="text-align:left; display:inline-block;">
-      <li>ODS 4 — Educação de qualidade</li>
-      <li>ODS 8 — Trabalho decente e crescimento econômico</li>
-      <li>ODS 12 — Consumo e produção responsáveis</li>
-    </ul>
+  <!-- Caótico vs Guiado -->
+  <section id="caotico" class="panel">
+    <div class="grid">
+      <div class="card">
+        <label>Capital inicial</label><input id="cP0" type="number" value="2000" step="100" min="0">
+        <label style="margin-top:8px">Aporte mensal (guiado)</label><input id="cAporte" type="number" value="300" step="50" min="0">
+        <label style="margin-top:8px">Tempo (anos)</label><input id="cAnos" type="number" value="8" step="1" min="1">
+        <label style="margin-top:8px">Retorno base a.a. (%)</label><input id="cRet" type="number" value="9" step="0.5">
+        <label style="margin-top:8px">Volatilidade a.a. (%)</label><input id="cVol" type="number" value="18" step="0.5">
+        <label style="margin-top:8px">Taxa adm a.a. (guiado) (%)</label><input id="cFee" type="number" value="0.3" step="0.1">
+        <div style="margin-top:12px">
+          <a class="button" href="javascript:void(0)" onclick="runCaotico()">Comparar</a>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="label">Final — Caótico</div><div id="cx_caos" class="value">—</div></div>
+          <div class="metric"><div class="label">Final — Guiado</div><div id="cx_guiado" class="value">—</div></div>
+          <div class="metric"><div class="label">Diferença</div><div id="cx_diff" class="value">—</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <canvas id="chartCaotico" height="320"></canvas>
+      </div>
+    </div>
   </section>
 
-  <section>
-    <h2>🚀 Experimente o Simulador</h2>
-    <p>Clique abaixo para abrir o simulador interativo.</p>
-    <a href="https://seu-link-do-streamlit.streamlit.app" class="button" target="_blank">Abrir Simulador</a>
+  <section id="sobre" class="panel">
+    <div class="card">
+      <h3>Sobre</h3>
+      <p>Projeto educacional (Ciclo 4) — demonstra <b>matemática financeira</b> na prática:
+        juros compostos, risco/retorno, Monte Carlo (GBM) e disciplina de investimentos.</p>
+      <p>ODS relacionados: <b>4</b> (Educação de qualidade), <b>8</b> (Trabalho decente e crescimento econômico),
+        <b>12</b> (Consumo e produção responsáveis).</p>
+      <p class="muted">Protótipo educacional — não é recomendação de investimento.</p>
+    </div>
   </section>
 
-  <footer>
-    Desenvolvido por <strong>Grupo Ciclo 4</strong> — Colégio Rio Branco Granja Viana © 2025
-  </footer>
+  <div class="footer">Feito para rodar 100% no GitHub Pages — © 2025</div>
+</div>
+
+<script>
+/* ------------------ Utils ------------------ */
+const fmt = (x) => x.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+function monthlyRateFromAnnual(pctAA){ return Math.pow(1 + pctAA/100, 1/12) - 1; }
+function monthlyVolFromAnnual(pctAA){ return (pctAA/100)/Math.sqrt(12); }
+
+/* ---------------- Tabs ---------------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ------------- Juros Compostos ----------- */
+let chartCompostos = null;
+function runCompostos(){
+  const P0 = parseFloat(document.getElementById('P0').value || 0);
+  const A  = parseFloat(document.getElementById('aporte').value || 0);
+  const anos = parseInt(document.getElementById('anos').value || 0);
+  const taxaAA = parseFloat(document.getElementById('taxaAA').value || 0);
+  const feeAA  = parseFloat(document.getElementById('feeAA').value || 0);
+  const volAA  = parseFloat(document.getElementById('volAA').value || 0);
+
+  const n = anos*12;
+  const r = monthlyRateFromAnnual(taxaAA);
+  const f = monthlyRateFromAnnual(feeAA);
+  const vol = volAA>0 ? monthlyVolFromAnnual(volAA) : 0;
+  const rng = (function(){ let s=1234567; return ()=>{s=(1103515245*s+12345)%2147483648; return s/2147483648;} })();
+
+  let saldo = P0, xs=[], ys=[];
+  for(let m=1;m<=n;m++){
+    let rm = r;
+    if(vol>0){
+      // choque lognormal simplificado
+      const z = Math.sqrt(-2*Math.log(rng())) * Math.cos(2*Math.PI*rng()); // Box-Muller
+      rm = Math.exp((r - 0.5*vol*vol) + vol*z) - 1;
+    }
+    const reff = rm - f;
+    saldo = saldo * (1 + reff) + A;
+    xs.push(m); ys.push(saldo);
+  }
+
+  const totalAportado = P0 + A*n;
+  document.getElementById('m_aporte').innerText = 'R$ ' + fmt(totalAportado);
+  document.getElementById('m_final').innerText  = 'R$ ' + fmt(saldo);
+  document.getElementById('m_ganho').innerText  = 'R$ ' + fmt(saldo - totalAportado);
+
+  const ctx = document.getElementById('chartCompostos').getContext('2d');
+  if(chartCompostos) chartCompostos.destroy();
+  chartCompostos = new Chart(ctx, {
+    type:'line',
+    data:{labels:xs, datasets:[{label:'Saldo', data:ys, tension:.15}]},
+    options:{responsive:true, plugins:{legend:{display:true}}, scales:{x:{title:{display:true,text:'Mês'}},y:{title:{display:true,text:'Saldo'}}}}
+  });
+}
+
+/* ------------- Carteira & GBM ------------ */
+let chartCarteira=null, chartHist=null;
+function runCarteira(){
+  const r1=+document.getElementById('r1').value, v1=+document.getElementById('v1').value, w1=+document.getElementById('w1').value;
+  const r2=+document.getElementById('r2').value, v2=+document.getElementById('v2').value, w2=+document.getElementById('w2').value;
+  const r3=+document.getElementById('r3').value, v3=+document.getElementById('v3').value, w3=+document.getElementById('w3').value;
+  let wsum = w1+w2+w3; if(wsum<=0){wsum=1} 
+  const w=[w1/wsum, w2/wsum, w3/wsum];
+
+  const corr = clamp(+document.getElementById('corr').value, -0.9, 0.95);
+  const years = +document.getElementById('horiz').value;
+  const npaths = Math.min(10000, Math.max(100, +document.getElementById('npaths').value));
+  const rfAA = +document.getElementById('rf').value;
+
+  const muAA = [r1/100, r2/100, r3/100], volAA=[v1/100, v2/100, v3/100];
+  const muM = muAA.map(x=>Math.pow(1+x,1/12)-1);
+  const volM = volAA.map(x=>x/Math.sqrt(12));
+  const n = years*12;
+
+  // cov = V * R * V
+  const R=[[1,corr,corr],[corr,1,corr],[corr,corr,1]];
+  const V=[[volM[0],0,0],[0,volM[1],0],[0,0,volM[2]]];
+  const VR = mul3(V,R);
+  const cov = mul3(VR, transpose(V));
+
+  // carteira equivalente (mu_p, sigma_p)
+  const mu_p = dot(w, muM);
+  const var_p = quadForm(w, cov);
+  const sigma_p = Math.sqrt(Math.max(0,var_p));
+
+  // simular caminhos da carteira
+  const paths = gbmPaths(mu_p, sigma_p, n, npaths);
+
+  // métricas
+  const {retAA, volAA_p, sharpe} = portfolioStats(paths, rfAA/100);
+  document.getElementById('m_ret').innerText = (retAA*100).toFixed(2)+'%';
+  document.getElementById('m_vol').innerText = (volAA_p*100).toFixed(2)+'%';
+  document.getElementById('m_sharpe').innerText = sharpe.toFixed(2);
+
+  // plot sample paths
+  const xs=[...Array(n+1).keys()];
+  const sample = Math.min(50, npaths);
+  const datasets=[];
+  for(let j=0;j<sample;j++){
+    const col = paths.map(row=>row[j]);
+    datasets.push({label:j===0?'Valor carteira':'', data:col, pointRadius:0, borderWidth:1, tension:.1});
+  }
+  const ctx1=document.getElementById('chartCarteira').getContext('2d');
+  if(chartCarteira) chartCarteira.destroy();
+  chartCarteira=new Chart(ctx1,{type:'line',data:{labels:xs,datasets},options:{plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Mês'}},y:{title:{display:true,text:'Valor (S0=1)'}}}}});
+
+  // hist final
+  const finals = paths[paths.length-1];
+  const bins = hist(finals, 30);
+  const ctx2=document.getElementById('chartHist').getContext('2d');
+  if(chartHist) chartHist.destroy();
+  chartHist=new Chart(ctx2,{type:'bar',data:{labels:bins.centers,datasets:[{label:'Valor final',data:bins.counts}]},options:{plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Valor final (faixa)'}},y:{title:{display:true,text:'Frequência'}}}}});
+}
+
+/* ------------- Caótico vs Guiado --------- */
+let chartCaotico=null;
+function runCaotico(){
+  const P0=+document.getElementById('cP0').value;
+  const A =+document.getElementById('cAporte').value;
+  const anos=+document.getElementById('cAnos').value;
+  const retAA=+document.getElementById('cRet').value/100;
+  const volAA=+document.getElementById('cVol').value/100;
+  const feeAA=+document.getElementById('cFee').value/100;
+
+  const n=anos*12, r=monthlyRateFromAnnual(retAA*100), vol=monthlyVolFromAnnual(volAA*100);
+  const fee_caos = monthlyRateFromAnnual(2.0); // 2% a.a. "caro"
+  const fee_guiado = monthlyRateFromAnnual(feeAA*100);
+  const rng = (function(){ let s=42; return ()=>{s=(1664525*s+1013904223)%4294967296; return s/4294967296;} })();
+
+  let saldoC=P0, saldoG=P0, xs=[], yC=[], yG=[];
+  for(let m=1;m<=n;m++){
+    // mercado
+    const z = Math.sqrt(-2*Math.log(rng())) * Math.cos(2*Math.PI*rng());
+    const market = Math.exp((r - 0.5*vol*vol) + vol*z) - 1;
+
+    // Caótico: aporte aleatório com viés de "market timing" ruim + saques ocasionais
+    const timingBias = -0.5*market;
+    const mult = clamp((rng()*1.5) + timingBias, 0, 1.5);
+    const aporteVar = A * mult;
+    const saque = (rng()<0.08) ? (saldoC * (0.01 + rng()*0.04)) : 0;
+
+    saldoC = (saldoC - saque) * (1 + (market - fee_caos)) + aporteVar;
+    saldoG = (saldoG) * (1 + (market - fee_guiado)) + A;
+
+    xs.push(m); yC.push(saldoC); yG.push(saldoG);
+  }
+
+  document.getElementById('cx_caos').innerText = 'R$ ' + fmt(yC[yC.length-1]);
+  document.getElementById('cx_guiado').innerText = 'R$ ' + fmt(yG[yG.length-1]);
+  document.getElementById('cx_diff').innerText = 'R$ ' + fmt(yG[yG.length-1] - yC[yC.length-1]);
+
+  const ctx=document.getElementById('chartCaotico').getContext('2d');
+  if(chartCaotico) chartCaotico.destroy();
+  chartCaotico=new Chart(ctx,{type:'line',data:{labels:xs,datasets:[
+    {label:'Caótico', data:yC, borderColor:'#ff7043', tension:.15},
+    {label:'Guiado',  data:yG, borderColor:'#00c853', tension:.15}
+  ]},options:{scales:{x:{title:{display:true,text:'Mês'}},y:{title:{display:true,text:'Saldo'}}}}});
+}
+
+/* ------- Math helpers for GBM portfolio ----- */
+function dot(a,b){let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
+function transpose(M){const r=M.length,c=M[0].length;const T=Array.from({length:c},()=>Array(r).fill(0));for(let i=0;i<r;i++)for(let j=0;j<c;j++)T[j][i]=M[i][j];return T;}
+function mul(A,B){const r=A.length,c=A[0].length,c2=B[0].length;const R=Array.from({length:r},()=>Array(c2).fill(0));for(let i=0;i<r;i++){for(let k=0;k<c;k++){const aik=A[i][k];for(let j=0;j<c2;j++)R[i][j]+=aik*B[k][j];}}return R;}
+function mul3(A,B){return mul(A,B);}
+function quadForm(w, C){ // w^T C w
+  const t = mul([w], C)[0];
+  return dot(t, w);
+}
+
+function gbmPaths(mu_m, sigma_m, months, npaths){
+  // retorna matriz (months+1) x npaths
+  const paths = Array.from({length:months+1}, ()=> Array(npaths).fill(0));
+  for(let j=0;j<npaths;j++) paths[0][j]=1.0;
+  const rng = (function(){ let s=987654321; return ()=>{s=(1103515245*s+12345)%2147483648; return s/2147483648;} })();
+  for(let t=1;t<=months;t++){
+    for(let j=0;j<npaths;j++){
+      const u1=Math.max(rng(),1e-12), u2=rng();
+      const z = Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+      const growth = Math.exp((mu_m - 0.5*sigma_m*sigma_m) + sigma_m*z);
+      paths[t][j] = paths[t-1][j] * growth;
+    }
+  }
+  return paths;
+}
+function portfolioStats(paths, rf){
+  // paths: (T x N)
+  const T=paths.length, N=paths[0].length;
+  let sum=0, sumsq=0, count=0;
+  for(let t=1;t<T;t++){
+    for(let j=0;j<N;j++){
+      const r = paths[t][j]/paths[t-1][j] - 1;
+      sum+=r; sumsq+=r*r; count++;
+    }
+  }
+  const mean_m = sum/count;
+  const var_m = (sumsq/count) - mean_m*mean_m;
+  const std_m = Math.sqrt(Math.max(0,var_m));
+  const retAA = Math.pow(1+mean_m,12)-1;
+  const volAA = std_m*Math.sqrt(12);
+  const sharpe = (retAA - rf) / (volAA + 1e-9);
+  return {retAA, volAA_p:volAA, sharpe};
+}
+function hist(values, nbins){
+  const min=Math.min(...values), max=Math.max(...values);
+  const step=(max-min)/nbins || 1;
+  const counts=Array(nbins).fill(0), centers=[];
+  for(let i=0;i<nbins;i++) centers.push(min + (i+0.5)*step);
+  for(const v of values){
+    let idx=Math.floor((v-min)/step);
+    if(idx===nbins) idx=nbins-1;
+    counts[idx]++;
+  }
+  return {counts, centers: centers.map(x=>+x.toFixed(2))};
+}
+
+// run defaults
+runCompostos();
+runCarteira();
+runCaotico();
+</script>
 </body>
 </html>
