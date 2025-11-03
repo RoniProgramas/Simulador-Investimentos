@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Simulador de Carteiras — Monte Carlo (GitHub Pages)</title>
+<title>Simulador de Carteiras </title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <style>
@@ -36,13 +36,12 @@
 </head>
 <body>
 <header>
-  <h1>📈 Simulador de Carteiras — Monte Carlo (GBM)</h1>
-  <p>Escolha ativos no catálogo → ajuste pesos → simule. 100% estático (GitHub Pages).</p>
+  <h1>📈 Simulador de Carteiras </h1>
+  <p>Escolha ativos no catálogo → ajuste pesos → simule. </p>
 </header>
 
 <div class="container">
   <div class="grid">
-    <!-- ESQUERDA: CONFIGURAÇÃO -->
     <div class="card">
       <h3>1) Adicionar ativos</h3>
       <p class="small">O catálogo abaixo já traz <b>retorno esperado (a.a. %)</b> e <b>vol 1y (a.a. %)</b> de exemplo. Você pode editar depois de adicionar.</p>
@@ -118,8 +117,7 @@ const $ = (id) => document.getElementById(id);
 const fmtBR = (x) => x.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-/* ========= Catálogo de ativos (exemplo) =========
-   Você pode ajustar/expandir esta lista livremente. */
+/* ========= Catálogo de ativos (exemplo) ======== */
 const CATALOG = [
   {symbol:"PETR4 (Ação BR)",     exp_return_aa:12.0, vol_1y_aa:35.0},
   {symbol:"VALE3 (Ação BR)",     exp_return_aa:11.0, vol_1y_aa:30.0},
