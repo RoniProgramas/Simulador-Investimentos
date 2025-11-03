@@ -3,9 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Simulador de Investimentos — Ciclo 4 (GitHub Pages)</title>
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
-<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<title>Simulador de Investimentos — Ciclo 4 (100% estático)</title>
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
@@ -27,7 +25,7 @@
   .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
   .card{background:rgba(255,255,255,.04);border:1px solid #2c3e70;border-radius:12px;padding:12px}
   label{display:block;font-size:.9rem;color:#cfe0ff;margin-bottom:4px}
-  input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #2c3e70;background:#0f1833;color:var(--text)}
+  input{width:100%;padding:10px;border-radius:10px;border:1px solid #2c3e70;background:#0f1833;color:var(--text)}
   .muted{color:var(--muted);font-size:.9rem}
   .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:8px}
   .metric{background:#0f1833;border:1px solid #2c3e70;border-radius:12px;padding:10px;text-align:center}
@@ -36,13 +34,13 @@
   .footer{margin:24px 0;color:#9fb1c9;text-align:center;font-size:.9rem}
   @media (max-width:900px){.grid,.grid-3,.metrics{grid-template-columns:1fr}}
   canvas{background:#0c1733;border-radius:10px;border:1px solid #22304f}
-  a.button{display:inline-block;background:var(--accent);color:#082316;font-weight:700;padding:10px 14px;border-radius:10px;text-decoration:none}
+  .button{display:inline-block;background:var(--accent);color:#082316;font-weight:700;padding:10px 14px;border-radius:10px;text-decoration:none;cursor:pointer}
 </style>
 </head>
 <body>
 <header>
   <h1>📈 Simulador de Investimentos — Ciclo 4</h1>
-  <p>100% estático (HTML + JS). Hospede no GitHub Pages.</p>
+  <p>Roda 100% no navegador (HTML + JavaScript). Hospede no GitHub Pages.</p>
 </header>
 
 <div class="container">
@@ -70,9 +68,9 @@
         <label style="margin-top:8px">Volatilidade anual (opcional, %)</label>
         <input type="number" id="volAA" value="0" step="0.5"/>
         <div style="margin-top:12px">
-          <a class="button" href="javascript:void(0)" onclick="runCompostos()">Simular</a>
+          <span class="button" onclick="runCompostos()">Simular</span>
         </div>
-        <p class="muted" style="margin-top:8px">Fórmula do montante com aportes mensais e capitalização mensal.</p>
+        <p class="muted" style="margin-top:8px">Capitalização mensal com aportes; opção de choques estocásticos.</p>
         <div class="metrics">
           <div class="metric"><div class="label">Total aportado</div><div id="m_aporte" class="value">—</div></div>
           <div class="metric"><div class="label">Saldo final</div><div id="m_final" class="value">—</div></div>
@@ -115,9 +113,9 @@
         <label style="margin-top:8px">Taxa livre de risco a.a. (%)</label>
         <input id="rf" type="number" value="6" step="0.1">
         <div style="margin-top:12px">
-          <a class="button" href="javascript:void(0)" onclick="runCarteira()">Simular</a>
+          <span class="button" onclick="runCarteira()">Simular</span>
         </div>
-        <p class="muted" style="margin-top:8px">Simulação da <b>carteira</b> (não por ativo) via GBM.</p>
+        <p class="muted" style="margin-top:8px">Simulação da <b>carteira agregada</b> via GBM (não simula cada ativo separadamente).</p>
         <div class="metrics">
           <div class="metric"><div class="label">Retorno esp. a.a.</div><div id="m_ret" class="value">—</div></div>
           <div class="metric"><div class="label">Vol a.a.</div><div id="m_vol" class="value">—</div></div>
@@ -143,7 +141,7 @@
         <label style="margin-top:8px">Volatilidade a.a. (%)</label><input id="cVol" type="number" value="18" step="0.5">
         <label style="margin-top:8px">Taxa adm a.a. (guiado) (%)</label><input id="cFee" type="number" value="0.3" step="0.1">
         <div style="margin-top:12px">
-          <a class="button" href="javascript:void(0)" onclick="runCaotico()">Comparar</a>
+          <span class="button" onclick="runCaotico()">Comparar</span>
         </div>
         <div class="metrics">
           <div class="metric"><div class="label">Final — Caótico</div><div id="cx_caos" class="value">—</div></div>
@@ -160,11 +158,9 @@
   <section id="sobre" class="panel">
     <div class="card">
       <h3>Sobre</h3>
-      <p>Projeto educacional (Ciclo 4) — demonstra <b>matemática financeira</b> na prática:
-        juros compostos, risco/retorno, Monte Carlo (GBM) e disciplina de investimentos.</p>
-      <p>ODS relacionados: <b>4</b> (Educação de qualidade), <b>8</b> (Trabalho decente e crescimento econômico),
-        <b>12</b> (Consumo e produção responsáveis).</p>
-      <p class="muted">Protótipo educacional — não é recomendação de investimento.</p>
+      <p>Projeto educacional (Ciclo 4) — demonstra <b>matemática financeira</b> na prática: juros compostos,
+         risco/retorno, Monte Carlo (GBM) e disciplina de investimentos.</p>
+      <p>ODS: <b>4</b>, <b>8</b>, <b>12</b>. <span class="muted">Não é recomendação de investimento.</span></p>
     </div>
   </section>
 
@@ -172,10 +168,9 @@
 </div>
 
 <script>
-/* ------------------ Utils ------------------ */
+/* ------------------ Utilitários ------------------ */
 const fmt = (x) => x.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-
 function monthlyRateFromAnnual(pctAA){ return Math.pow(1 + pctAA/100, 1/12) - 1; }
 function monthlyVolFromAnnual(pctAA){ return (pctAA/100)/Math.sqrt(12); }
 
@@ -203,14 +198,16 @@ function runCompostos(){
   const r = monthlyRateFromAnnual(taxaAA);
   const f = monthlyRateFromAnnual(feeAA);
   const vol = volAA>0 ? monthlyVolFromAnnual(volAA) : 0;
+
+  // RNG simples e estável
   const rng = (function(){ let s=1234567; return ()=>{s=(1103515245*s+12345)%2147483648; return s/2147483648;} })();
 
   let saldo = P0, xs=[], ys=[];
   for(let m=1;m<=n;m++){
     let rm = r;
     if(vol>0){
-      // choque lognormal simplificado
-      const z = Math.sqrt(-2*Math.log(rng())) * Math.cos(2*Math.PI*rng()); // Box-Muller
+      // choque lognormal simplificado (Box-Muller)
+      const z = Math.sqrt(-2*Math.log(rng())) * Math.cos(2*Math.PI*rng());
       rm = Math.exp((r - 0.5*vol*vol) + vol*z) - 1;
     }
     const reff = rm - f;
@@ -228,7 +225,8 @@ function runCompostos(){
   chartCompostos = new Chart(ctx, {
     type:'line',
     data:{labels:xs, datasets:[{label:'Saldo', data:ys, tension:.15}]},
-    options:{responsive:true, plugins:{legend:{display:true}}, scales:{x:{title:{display:true,text:'Mês'}},y:{title:{display:true,text:'Saldo'}}}}
+    options:{responsive:true, plugins:{legend:{display:true}},
+      scales:{x:{title:{display:true,text:'Mês'}},y:{title:{display:true,text:'Saldo'}}}}
   });
 }
 
@@ -254,8 +252,8 @@ function runCarteira(){
   // cov = V * R * V
   const R=[[1,corr,corr],[corr,1,corr],[corr,corr,1]];
   const V=[[volM[0],0,0],[0,volM[1],0],[0,0,volM[2]]];
-  const VR = mul3(V,R);
-  const cov = mul3(VR, transpose(V));
+  const VR = mul(V,R);
+  const cov = mul(VR, transpose(V));
 
   // carteira equivalente (mu_p, sigma_p)
   const mu_p = dot(w, muM);
@@ -281,14 +279,16 @@ function runCarteira(){
   }
   const ctx1=document.getElementById('chartCarteira').getContext('2d');
   if(chartCarteira) chartCarteira.destroy();
-  chartCarteira=new Chart(ctx1,{type:'line',data:{labels:xs,datasets},options:{plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Mês'}},y:{title:{display:true,text:'Valor (S0=1)'}}}}});
+  chartCarteira=new Chart(ctx1,{type:'line',data:{labels:xs,datasets},options:{plugins:{legend:{display:false}},
+    scales:{x:{title:{display:true,text:'Mês'}},y:{title:{display:true,text:'Valor (S0=1)'}}}}});
 
-  // hist final
+  // histograma do valor final
   const finals = paths[paths.length-1];
   const bins = hist(finals, 30);
   const ctx2=document.getElementById('chartHist').getContext('2d');
   if(chartHist) chartHist.destroy();
-  chartHist=new Chart(ctx2,{type:'bar',data:{labels:bins.centers,datasets:[{label:'Valor final',data:bins.counts}]},options:{plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Valor final (faixa)'}},y:{title:{display:true,text:'Frequência'}}}}});
+  chartHist=new Chart(ctx2,{type:'bar',data:{labels:bins.centers,datasets:[{label:'Valor final',data:bins.counts}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Valor final (faixa)'}},y:{title:{display:true,text:'Frequência'}}}}});
 }
 
 /* ------------- Caótico vs Guiado --------- */
@@ -304,15 +304,17 @@ function runCaotico(){
   const n=anos*12, r=monthlyRateFromAnnual(retAA*100), vol=monthlyVolFromAnnual(volAA*100);
   const fee_caos = monthlyRateFromAnnual(2.0); // 2% a.a. "caro"
   const fee_guiado = monthlyRateFromAnnual(feeAA*100);
+
   const rng = (function(){ let s=42; return ()=>{s=(1664525*s+1013904223)%4294967296; return s/4294967296;} })();
 
   let saldoC=P0, saldoG=P0, xs=[], yC=[], yG=[];
   for(let m=1;m<=n;m++){
     // mercado
-    const z = Math.sqrt(-2*Math.log(rng())) * Math.cos(2*Math.PI*rng());
+    const u1=Math.max(rng(),1e-12), u2=rng();
+    const z = Math.sqrt(-2*Math.log(u1)) * Math.cos(2*Math.PI*u2);
     const market = Math.exp((r - 0.5*vol*vol) + vol*z) - 1;
 
-    // Caótico: aporte aleatório com viés de "market timing" ruim + saques ocasionais
+    // Caótico: aporte aleatório com viés ruim + saques
     const timingBias = -0.5*market;
     const mult = clamp((rng()*1.5) + timingBias, 0, 1.5);
     const aporteVar = A * mult;
@@ -336,18 +338,14 @@ function runCaotico(){
   ]},options:{scales:{x:{title:{display:true,text:'Mês'}},y:{title:{display:true,text:'Saldo'}}}}});
 }
 
-/* ------- Math helpers for GBM portfolio ----- */
+/* ------- Helpers de álgebra/GBM ----- */
 function dot(a,b){let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
 function transpose(M){const r=M.length,c=M[0].length;const T=Array.from({length:c},()=>Array(r).fill(0));for(let i=0;i<r;i++)for(let j=0;j<c;j++)T[j][i]=M[i][j];return T;}
 function mul(A,B){const r=A.length,c=A[0].length,c2=B[0].length;const R=Array.from({length:r},()=>Array(c2).fill(0));for(let i=0;i<r;i++){for(let k=0;k<c;k++){const aik=A[i][k];for(let j=0;j<c2;j++)R[i][j]+=aik*B[k][j];}}return R;}
-function mul3(A,B){return mul(A,B);}
-function quadForm(w, C){ // w^T C w
-  const t = mul([w], C)[0];
-  return dot(t, w);
-}
+function quadForm(w, C){const t = mul([w], C)[0]; return dot(t, w);}
 
 function gbmPaths(mu_m, sigma_m, months, npaths){
-  // retorna matriz (months+1) x npaths
+  // matriz (months+1) x npaths
   const paths = Array.from({length:months+1}, ()=> Array(npaths).fill(0));
   for(let j=0;j<npaths;j++) paths[0][j]=1.0;
   const rng = (function(){ let s=987654321; return ()=>{s=(1103515245*s+12345)%2147483648; return s/2147483648;} })();
@@ -392,10 +390,7 @@ function hist(values, nbins){
   return {counts, centers: centers.map(x=>+x.toFixed(2))};
 }
 
-// run defaults
-runCompostos();
-runCarteira();
-runCaotico();
+runCompostos(); runCarteira(); runCaotico();
 </script>
 </body>
 </html>
