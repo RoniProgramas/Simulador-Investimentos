@@ -202,14 +202,22 @@ tbody td+td{border-left:1px solid var(--stroke)}
       </div>
 
       <div style="display:flex;gap:8px;align-items:center;margin-top:14px;margin-bottom:6px">
-        <h4 style="margin:0">Caminhos simulados (carteira)</h4>
-  <button class="btn secondary" id="resetZoomPaths" type="button">Resetar zoom</button>
+  <h4 style="margin:0">Caminhos simulados (carteira)</h4>
+  <div class="chips">
+    <span class="chip">zoom: roda/pinça</span>
+    <span class="chip">pan: Shift + arrastar</span>
+  </div>
+  <button class="btn secondary" id="resetZoomPaths" type="button" style="margin-left:auto">Resetar zoom</button>
 </div>
 
-<canvas id="chartPaths" height="260" aria-label="Gráfico de caminhos" role="img"></canvas>
+<div class="canvas-wrap">
+  <canvas id="chartPaths" height="260" aria-label="Gráfico de caminhos" role="img"></canvas>
+</div>
 
-      <h4 style="margin-top:14px">Distribuição do valor final</h4>
-      <canvas id="chartHist" height="200" aria-label="Histograma do valor final" role="img"></canvas>
+<h4 style="margin-top:14px">Distribuição do valor final</h4>
+<div class="canvas-wrap">
+  <canvas id="chartHist" height="200" aria-label="Histograma do valor final" role="img"></canvas>
+</div>
 
       <h4 style="margin-top:16px">Contribuição média por ativo (valor final)</h4>
       <table id="byAsset">
