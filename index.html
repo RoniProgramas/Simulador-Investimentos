@@ -341,6 +341,36 @@ function drawCharts(xs, sampled, finals){
   }
   pathsChart = new Chart(ctx1, { type:"line", data:{labels:xs, datasets},
     options:{ plugins:{legend:{display:false}}, scales:{x:{title:{display:true,text:"Mês"}}, y:{title:{display:true,text:"Valor (R$)"}} } } });
+  pathsChart = new Chart(ctx1, {
+  type: "line",
+  data: { labels: xs, datasets },
+  options: {
+    plugins: {
+      legend: { display:false },
+      zoom: {
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          drag:  { enabled: true },
+          mode: "xy"   
+        },
+        pan: {
+          enabled: true,
+          mode: "xy",
+          modifierKey: "shift" 
+        },
+        limits: {
+          x: { min: "original", max: "original" },
+          y: { min: "original", max: "original" }
+        }
+      }
+    },
+    scales: {
+      x: { title:{ display:true, text:"Mês" } },
+      y: { title:{ display:true, text:"Valor (R$)" } }
+    }
+  }
+});
 
   const ctx2 = $("chartHist").getContext("2d");
   if(histChart) histChart.destroy();
