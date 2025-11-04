@@ -231,7 +231,22 @@ tbody td+td{border-left:1px solid var(--stroke)}
 </div>
 
 <script>
-/* ========= Helpers ========= */
+const root = document.documentElement;
+document.getElementById("themeToggle")?.addEventListener("change", (e)=>{
+  if(e.target.checked) root.setAttribute("data-theme","light");
+  else root.removeAttribute("data-theme");
+});
+
+
+function toast(msg, ms=2400){
+  const el = document.getElementById("toast");
+  if(!el) return; el.textContent = msg; el.classList.add("show");
+  setTimeout(()=> el.classList.remove("show"), ms);
+}
+
+
+function spin(on){ const s = document.getElementById("spinner"); if(!s) return; s.classList.toggle("show", !!on); }
+
 const $ = (id) => document.getElementById(id);
 const fmtBR = (x) => x.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
