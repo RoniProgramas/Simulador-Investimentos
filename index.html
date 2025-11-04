@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#0b132b">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js" defer></script>
 <style>
 :root{
@@ -34,9 +35,400 @@ body{
   color:var(--text); font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial;
 }
 header{
-@@ -429,68 +428,66 @@ const workerCode = `
+  padding:24px 16px; text-align:center; border-bottom:1px solid var(--stroke);
+  background:linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+}
+header h1{margin:0; font-size:1.75rem; letter-spacing:.2px}
+header p{margin:.5rem auto 0; color:var(--muted); max-width:920px}
+
+.container{max-width:1200px; margin:18px auto; padding:0 16px}
+.grid{display:grid; grid-template-columns:2fr 3fr; gap:16px}
+@media (max-width:1024px){.grid{grid-template-columns:1fr}}
+
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+  border:1px solid var(--stroke); border-radius:16px; padding:16px;
+  box-shadow: var(--shadow); backdrop-filter: blur(6px);
+}
+h3{margin:0 0 8px 0; font-size:1.05rem}
+h4{margin:0 0 10px 0}
+
+.row{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px}
+@media (max-width:1024px){.row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+label{display:block; font-size:.85rem; color:var(--muted); margin:0 0 6px 6px}
+input, select{
+  width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--stroke);
+  background:var(--panel); color:var(--text); outline:none; transition:.15s border, .15s box-shadow;
+}
+input:focus, select:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,200,83,.15)}
+
+table{width:100%; border-collapse:separate; border-spacing:0 8px; margin-top:8px}
+th, td{padding:10px 12px; font-size:.92rem}
+thead th{color:var(--muted); font-weight:600}
+tbody tr{
+  background:var(--panel); border:1px solid var(--stroke);
+  box-shadow: var(--shadow); border-radius:12px;
+}
+tbody td:first-child{border-top-left-radius:12px; border-bottom-left-radius:12px}
+tbody td:last-child{border-top-right-radius:12px; border-bottom-right-radius:12px}
+tbody td{border-top:1px solid var(--stroke); border-bottom:1px solid var(--stroke)}
+tbody td+td{border-left:1px solid var(--stroke)}
+
+.btn{
+  display:inline-flex; align-items:center; gap:8px; border:0; cursor:pointer;
+  background:var(--accent); color:#072716; font-weight:700; padding:10px 14px; border-radius:12px;
+  transition: transform .05s ease, box-shadow .2s ease;
+}
+.btn:hover{box-shadow:0 6px 18px rgba(0,200,83,.25)}
+.btn:active{transform: translateY(1px)}
+.btn.secondary{
+  background:transparent; color:var(--text); border:1px solid var(--stroke);
+}
+.chips{display:flex; gap:8px; flex-wrap:wrap}
+.chip{
+  background:var(--panel); border:1px solid var(--stroke); color:var(--muted);
+  padding:6px 10px; border-radius:999px; font-size:.85rem;
+}
+
+.canvas-wrap{
+  background:var(--panel); border:1px solid var(--stroke); border-radius:14px; padding:8px;
+  box-shadow: var(--shadow);
+}
+
+.metrics{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-top:10px}
+@media (max-width:1024px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.metric{
+  background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px; text-align:center
+}
+.metric .label{color:var(--muted); font-size:.8rem}
+.metric .value{font-size:1.06rem; font-weight:700; margin-top:4px}
+
+.actions{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0}
+.status{margin-top:8px; color:var(--muted); font-size:.9rem; min-height:1.4em}
+
+/* toast + spinner */
+.toast{
+  position:fixed; right:18px; bottom:18px; background:var(--panel); color:var(--text);
+  border:1px solid var(--stroke); padding:10px 14px; border-radius:12px; box-shadow:var(--shadow);
+  opacity:0; transform:translateY(8px); transition:.25s; z-index:50;
+}
+.toast.show{opacity:1; transform:translateY(0)}
+.spinner{
+  position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.25); backdrop-filter: blur(2px); z-index:40;
+}
+.spinner.show{display:grid}
+.spinner .dot{
+  width:10px; height:10px; margin:0 4px; background:var(--accent); border-radius:50%;
+  animation: bounce .8s infinite ease-in-out alternate;
+}
+.spinner .dot:nth-child(2){animation-delay:.15s} .spinner .dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{to{transform: translateY(-8px)}}
+
+.topbar{
+  position:sticky; top:0; z-index:30; display:flex; justify-content:flex-end; padding:8px 16px;
+  backdrop-filter: blur(8px); background:linear-gradient(180deg, rgba(0,0,0,.45), transparent);
+}
+.switch{
+  display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:.9rem;
+}
+.switch input{width:auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+  <label class="switch">
+    <input type="checkbox" id="themeToggle">
+    Tema claro
+  </label>
+</div>
+  <h1>📈 Simulador de Carteiras </h1>
+  <p>Escolha ativos no catálogo → ajuste pesos → simule. </p>
+</header>
+
+<div class="container">
+  <div class="grid">
+    <div class="card">
+      <h3>1) Adicionar ativos</h3>
+      <p class="small">O catálogo abaixo já traz <b>retorno esperado (a.a. %)</b> e <b>vol 1y (a.a. %)</b> de exemplo. Você pode editar depois de adicionar.</p>
+      <div class="row">
+        <div style="grid-column: span 3;">
+          <label>Catálogo de ativos</label>
+          <select id="catalogSelect"></select>
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn" id="addAssetBtn">Adicionar ativo</button>
+        </div>
+      </div>
+
+      <h3 style="margin-top:16px">2) Sua carteira</h3>
+      <p class="small">Marque “Usar” para incluir na simulação. Pesos são normalizados automaticamente.</p>
+      <table id="assetsTable" aria-label="Tabela de ativos">
+        <thead><tr>
+          <th>Usar</th><th>Ativo</th><th>Ret. a.a. (%)</th><th>Vol 1y a.a. (%)</th><th>Peso</th><th>Ações</th>
+        </tr></thead>
+        <tbody id="assetsBody"></tbody>
+      </table>
+
+      <h3 style="margin-top:16px">3) Parâmetros</h3>
+      <div class="row">
+        <div><label>Horizonte (anos)</label><input id="years" type="number" value="10" step="1" min="1"></div>
+        <div><label>Caminhos (Monte Carlo)</label><input id="npaths" type="number" value="5000" step="100" min="10" max="50000"></div>
+        <div><label>Correlação média</label><input id="rho" type="number" value="0.2" step="0.05" min="-0.9" max="0.95"></div>
+        <div><label>Risk-free a.a. (%)</label><input id="rf" type="number" value="6" step="0.1"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div><label>Seed</label><input id="seed" type="number" value="12345" step="1"></div>
+        <div><label>Valor inicial (R$)</label><input id="S0" type="number" value="10000" step="100"></div>
+        <div><label>Aporte mensal (R$)</label><input id="aport" type="number" value="0" step="50"></div>
+        <div style="display:flex;align-items:flex-end;gap:8px">
+          <button class="btn" id="runBtn">Simular</button>
+          <button class="btn secondary" id="sampleBtn">Simular (rápido)</button>
+        </div>
+      </div>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </div>
+
+    <!-- DIREITA: RESULTADOS -->
+    <div class="card">
+      <h3>Resultados</h3>
+      <div class="metrics">
+        <div class="metric"><div class="label">Média final</div><div id="m_mean" class="value">—</div></div>
+        <div class="metric"><div class="label">Mediana final</div><div id="m_median" class="value">—</div></div>
+        <div class="metric"><div class="label">P5 / P95</div><div id="m_p" class="value">—</div></div>
+        <div class="metric"><div class="label">Ret. a.a. / Vol a.a.</div><div id="m_rv" class="value">—</div></div>
+        <div class="metric"><div class="label">Sharpe (aprox.)</div><div id="m_sharpe" class="value">—</div></div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-top:14px;margin-bottom:6px">
+  <h4 style="margin:0">Caminhos simulados (carteira)</h4>
+  <div class="chips">
+    <span class="chip">zoom: roda/pinça</span>
+    <span class="chip">pan: Shift + arrastar</span>
+  </div>
+  <button class="btn secondary" id="resetZoomPaths" type="button" style="margin-left:auto">Resetar zoom</button>
+</div>
+
+<div class="canvas-wrap">
+  <canvas id="chartPaths" height="260" aria-label="Gráfico de caminhos" role="img"></canvas>
+</div>
+
+<h4 style="margin-top:14px">Distribuição do valor final</h4>
+<div class="canvas-wrap">
+  <canvas id="chartHist" height="200" aria-label="Histograma do valor final" role="img"></canvas>
+</div>
+
+      <h4 style="margin-top:16px">Contribuição média por ativo (valor final)</h4>
+      <table id="byAsset">
+        <thead><tr><th>Ativo</th><th>Peso</th><th>Ret. a.a. (%)</th><th>Vol a.a. (%)</th><th>Valor final médio (R$)</th></tr></thead>
+        <tbody id="byAssetBody"></tbody>
+      </table>
+
+      <p class="small" style="margin-top:8px">Protótipo educacional — não é recomendação de investimento.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const root = document.documentElement;
+document.getElementById("themeToggle")?.addEventListener("change", (e)=>{
+  if(e.target.checked) root.setAttribute("data-theme","light");
+  else root.removeAttribute("data-theme");
+});
+
+
+function toast(msg, ms=2400){
+  const el = document.getElementById("toast");
+  if(!el) return; el.textContent = msg; el.classList.add("show");
+  setTimeout(()=> el.classList.remove("show"), ms);
+}
+
+
+function spin(on){ const s = document.getElementById("spinner"); if(!s) return; s.classList.toggle("show", !!on); }
+
+const $ = (id) => document.getElementById(id);
+const fmtBR = (x) => x.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/* ========= Catálogo de ativos ======== */
+const CATALOG = [
+  {symbol:"PETR4 (Ação BR)",     exp_return_aa:12.0, vol_1y_aa:35.0},
+  {symbol:"VALE3 (Ação BR)",     exp_return_aa:11.0, vol_1y_aa:30.0},
+  {symbol:"BOVA11 (Ibovespa)",   exp_return_aa:10.0, vol_1y_aa:22.0},
+  {symbol:"IVVB11 (S&P500 BRL)", exp_return_aa:9.0,  vol_1y_aa:18.0},
+  {symbol:"FII Setorial",        exp_return_aa:8.0,  vol_1y_aa:15.0},
+  {symbol:"Cripto (BTC proxy)",  exp_return_aa:25.0, vol_1y_aa:80.0},
+  {symbol:"Tesouro Selic",       exp_return_aa:6.0,  vol_1y_aa:3.5},
+  {symbol:"Tesouro IPCA+",       exp_return_aa:7.5,  vol_1y_aa:6.0},
+  { symbol:"Dólar (USD/BRL)",  exp_return_aa: 5.0,  vol_1y_aa: 18.0 },
+];
+
+/* ========= Estado da carteira ========= */
+let assets = []; // {enabled, symbol, exp_return_aa, vol_1y_aa, weight}
+
+/* ========= UI: catálogo e carteira ========= */
+function renderCatalog(){
+  const select = $("catalogSelect");
+  select.innerHTML = "";
+  CATALOG.forEach((a, idx)=>{
+    const opt = document.createElement("option");
+    opt.value = idx;
+    opt.textContent = `${a.symbol} — Ret ${a.exp_return_aa}% • Vol ${a.vol_1y_aa}%`;
+    select.appendChild(opt);
+  });
+}
+function renderAssets(){
+  const tbody = $("assetsBody");
+  tbody.innerHTML = "";
+  assets.forEach((a,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="checkbox" ${a.enabled?'checked':''} data-i="${i}" data-k="enabled"></td>
+      <td><input value="${a.symbol}" data-i="${i}" data-k="symbol"></td>
+      <td><input type="number" step="0.1" value="${a.exp_return_aa}" data-i="${i}" data-k="exp_return_aa"></td>
+      <td><input type="number" step="0.1" value="${a.vol_1y_aa}" data-i="${i}" data-k="vol_1y_aa"></td>
+      <td><input type="number" step="0.01" min="0" max="1" value="${a.weight}" data-i="${i}" data-k="weight"></td>
+      <td><button class="iconbtn danger" data-i="${i}" data-action="remove">Remover</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+function addSelectedAsset(){
+  const idx = parseInt($("catalogSelect").value);
+  const item = CATALOG[idx];
+  // evita duplicado pelo symbol
+  if(assets.some(a=>a.symbol===item.symbol)){
+    $("status").textContent = "Esse ativo já está na carteira.";
+    return;
+  }
+  assets.push({
+    enabled:true,
+    symbol:item.symbol,
+    exp_return_aa:item.exp_return_aa,
+    vol_1y_aa:item.vol_1y_aa,
+    weight: assets.length? 0.0 : 1.0 // primeiro entra com 100%, depois normalizamos
+  });
+  normalizeWeights();
+  renderAssets();
+  $("status").textContent = `Ativo "${item.symbol}" adicionado.`;
+}
+function normalizeWeights(){
+  const enabled = assets.filter(a=>a.enabled);
+  if(enabled.length===0) return;
+  const equal = 1/enabled.length;
+  // se a soma atual > 0, normaliza; senão, distribui igual
+  let sum = enabled.reduce((s,a)=>s+a.weight,0);
+  if(sum <= 1e-9){
+    assets.forEach(a=>{ if(a.enabled) a.weight = equal; });
+  } else {
+    assets.forEach(a=>{ if(a.enabled) a.weight = a.weight / sum; });
+  }
+}
+
+/* eventos de edição/remoção */
+$("assetsBody").addEventListener("input", (e)=>{
+  const i = +e.target.dataset.i;
+  const k = e.target.dataset.k;
+  if(k==="enabled"){
+    assets[i].enabled = e.target.checked;
+    normalizeWeights(); renderAssets();
+  } else {
+    const val = e.target.value;
+    assets[i][k] = (k==="symbol") ? val : parseFloat(val);
+  }
+});
+$("assetsBody").addEventListener("click", (e)=>{
+  const act = e.target.dataset.action;
+  if(act==="remove"){
+    const i = +e.target.dataset.i;
+    const removed = assets.splice(i,1)[0];
+    normalizeWeights(); renderAssets();
+    $("status").textContent = `Ativo "${removed.symbol}" removido.`;
+  }
+});
+
+/* botão adicionar */
+$("addAssetBtn").addEventListener("click", addSelectedAsset);
+
+/* ========= Web Worker (Monte Carlo) ========= */
+const workerCode = `
+  const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+  function monthlyRateFromAnnual(pctAA){ return Math.pow(1 + pctAA/100, 1/12) - 1; }
+  function monthlyVolFromAnnual(pctAA){ return (pctAA/100)/Math.sqrt(12); }
+  function LCG(seed=12345){ let s = seed>>>0; return ()=>{ s = (1664525*s + 1013904223) >>> 0; return s / 4294967296; }; }
+  function randn(rng){ const u1=Math.max(rng(),1e-12), u2=rng(); return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); }
+  function cholesky(A){
+    const n=A.length; const L=Array.from({length:n},()=>Array(n).fill(0));
+    for(let i=0;i<n;i++){
+      for(let j=0;j<=i;j++){
+        let sum = A[i][j];
+        for(let k=0;k<j;k++) sum -= L[i][k]*L[j][k];
+        if(i===j){ L[i][j] = Math.sqrt(Math.max(sum,1e-12)); }
+        else { L[i][j] = sum / L[j][j]; }
+      }
+    }
+    return L;
+  }
+
+  onmessage = (e)=>{
+    const {assets, years, npaths, rho, rfAA, S0, aport, seed, samplePaths} = e.data;
+    const sel = assets.filter(a=>a.enabled);
+    const k = sel.length;
+    if(k===0){ postMessage({error:"Nenhum ativo selecionado."}); return; }
+
+    // normaliza pesos
+    let wsum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
+    if(wsum<=0){ wsum = k; sel.forEach(a=>a.weight=1/k); } else sel.forEach(a=>a.weight=a.weight/wsum);
+
+    // parâmetros mensais
+    const muM = sel.map(a=>monthlyRateFromAnnual(a.exp_return_aa));
+    const sigM = sel.map(a=>monthlyVolFromAnnual(a.vol_1y_aa));
+    const w = sel.map(a=>a.weight);
+
+    // covariância
+    const C = Array.from({length:k},()=>Array(k).fill(0));
+    for(let i=0;i<k;i++)for(let j=0;j<k;j++) C[i][j] = (i===j? sigM[i]*sigM[i] : rho*sigM[i]*sigM[j]);
+    // cholesky com jitter
+    let jitter=1e-12; let L=null;
+    while(true){
+      try{
+        const Cj = C.map((row,i)=>row.map((v,j)=> v + (i===j?jitter:0)));
+        L = cholesky(Cj); break;
+      }catch{ jitter*=10; if(jitter>1e-3){ postMessage({error:"Matriz de covariância inválida."}); return; } }
+    }
+
+    const months = years*12;
+    const rng = LCG(seed);
+
+    const keep = Math.min(samplePaths, npaths);
+    const xs = Array(months+1).fill(0).map((_,i)=>i);
+    const sampled = Array.from({length:keep}, ()=> new Float64Array(months+1));
+    for(let j=0;j<keep;j++) sampled[j][0] = S0;
+    const finals = new Float64Array(npaths);
+    const finalByAsset = new Float64Array(k);
+
+    for(let p=0;p<npaths;p++){
+      let S = w.map(wi=>S0*wi);
+      for(let t=1;t<=months;t++){
+        const u = Array.from({length:k},()=>randn(rng));
+        const z = L.map(row=>row.reduce((s,v,idx)=>s+v*u[idx],0));
+        for(let i=0;i<k;i++){
+          const growth = Math.exp((muM[i] - 0.5*sigM[i]*sigM[i]) + sigM[i]*z[i]);
+          S[i] *= growth;
+        }
+        if(aport>0) for(let i=0;i<k;i++) S[i] += aport*w[i];
+        if(p<keep){
+          const total = S.reduce((s,v)=>s+v,0);
+          sampled[p][t] = total;
+        }
+      }
+      finals[p] = S.reduce((s,v)=>s+v,0);
+      for(let i=0;i<k;i++) finalByAsset[i]+=S[i];
+    }
     for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
 
+    // métricas (estimadas pela primeira amostra de caminhos para retornos mensais)
     const rets = [];
     for(let t=1;t<=months;t++){
       const prev = sampled[0][t-1], cur = sampled[0][t];
@@ -59,9 +451,9 @@ header{
 `;
 const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
 
-document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", () => {
   if (window.Chart && window.ChartZoom) {
-    Chart.register(window.ChartZoom);
+    Chart.register(ChartZoom);
   }
 });
 
@@ -71,10 +463,12 @@ let pathsChart=null, histChart=null;
 function drawCharts(xs, sampled, finals){
   const ctx1 = $("chartPaths").getContext("2d");
   if(pathsChart) pathsChart.destroy();
-  const datasets = [];
+  const datasets=[];
   for(let j=0;j<sampled.length;j++){
     datasets.push({ label: j===0 ? "Carteira" : undefined, data: Array.from(sampled[j]), pointRadius:0, borderWidth:1, tension:.12 });
   }
+  pathsChart = new Chart(ctx1, { type:"line", data:{labels:xs, datasets},
+    options:{ plugins:{legend:{display:false}}, scales:{x:{title:{display:true,text:"Mês"}}, y:{title:{display:true,text:"Valor (R$)"}} } } });
   pathsChart = new Chart(ctx1, {
   type: "line",
   data: { labels: xs, datasets },
@@ -100,7 +494,26 @@ function drawCharts(xs, sampled, finals){
       }
     },
     scales: {
-@@ -517,126 +514,105 @@ function captureParams(){
+      x: { title:{ display:true, text:"Mês" } },
+      y: { title:{ display:true, text:"Valor (R$)" } }
+    }
+  }
+});
+
+  const ctx2 = $("chartHist").getContext("2d");
+  if(histChart) histChart.destroy();
+  const nbins=30; const min=Math.min(...finals), max=Math.max(...finals);
+  const step=(max-min)/nbins || 1; const counts=new Array(nbins).fill(0), centers=[];
+  for(let i=0;i<nbins;i++) centers.push((min+(i+0.5)*step).toFixed(0));
+  for(const v of finals){ let idx=Math.floor((v-min)/step); if(idx===nbins) idx=nbins-1; counts[idx]++; }
+  histChart = new Chart(ctx2, { type:"bar", data:{labels:centers, datasets:[{label:"Valor final", data:counts}]},
+    options:{ plugins:{legend:{display:false}}, scales:{x:{title:{display:true,text:"Valor final (faixa)"}}, y:{title:{display:true,text:"Frequência"}} } } });
+}
+
+/* ========= Simulação ========= */
+function captureParams(){
+  return {
+    years: parseInt($("years").value)||10,
     npaths: clamp(parseInt($("npaths").value)||5000, 10, 50000),
     rho: clamp(parseFloat($("rho").value)||0.2, -0.9, 0.95),
     rf: parseFloat($("rf").value)||6,
@@ -114,52 +527,76 @@ function runSimulation(fast=false){
   const sel = assets.filter(a=>a.enabled);
   if(sel.length===0){ $("status").textContent="Selecione/adicione pelo menos um ativo."; return; }
 
-
+  // normaliza pesos entre ativos habilitados
   let sum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
   if(sum<=0){ sel.forEach(a=>a.weight=1/sel.length); }
   else sel.forEach(a=>a.weight=a.weight/sum);
 
- 
+  // aplica pesos normalizados de volta
   assets = assets.map(a=>{
     const f = sel.find(s=>s.symbol===a.symbol);
     return f ? {...a, weight:f.weight} : a;
   });
 
+  // status + spinner + carimbo de tempo
+$("status").textContent = fast ? "Simulando (rápido)..." : "Simulando em segundo plano...";
+spin(true);
+const t0 = performance.now();
+
+// manda a simulação pro worker (mesmo payload que você já tinha)
+worker.postMessage({
+  assets: assets,
+  years: params.years,
+  npaths: fast ? Math.max(50, Math.floor(params.npaths/5)) : params.npaths,
+  rho: params.rho,
+  rfAA: params.rf/100,
+  S0: params.S0,
+  aport: params.aport,
+  seed: params.seed,
+  samplePaths: 60
+});
+
+// recebe o resultado
+worker.onmessage = (ev)=>{
+  spin(false);
+  const t1 = performance.now();
+
+  if (ev.data.error){
+    $("status").textContent = ev.data.error;
+    toast(ev.data.error);
+    return;
+  }
+
+  const {
+    xs, sampled, finals,
+    mean, median, p5, p95,
+    retAA, volAA, sharpe,
+    finalByAsset, assets: used
+  } = ev.data;
+
+  $("m_mean").textContent   = "R$ " + fmtBR(mean);
+  $("m_median").textContent = "R$ " + fmtBR(median);
+  $("m_p").textContent      = `P5: R$ ${fmtBR(p5)} | P95: R$ ${fmtBR(p95)}`;
+  $("m_rv").textContent     = `${(retAA*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
+  $("m_sharpe").textContent = sharpe.toFixed(2);
+
   
-  $("status").textContent = fast ? "Simulando (rápido)..." : "Simulando em segundo plano...";
-  spin(true);
-  const t0 = performance.now();
-
-
-  worker.postMessage({
-    assets: assets,
-    years: params.years,
-    npaths: fast ? Math.max(50, Math.floor(params.npaths/5)) : params.npaths,
-    rho: params.rho,
-    rfAA: params.rf/100,
-    S0: params.S0,
-    aport: params.aport,
-    seed: params.seed,
-    samplePaths: 60
+  const body = $("byAssetBody");
+  body.innerHTML = "";
+  used.forEach((a,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${a.symbol}</td><td>${(a.weight*100).toFixed(1)}%</td>
+                    <td>${(+a.exp_return_aa).toFixed(2)}</td><td>${(+a.vol_1y_aa).toFixed(2)}</td>
+                    <td>R$ ${fmtBR(finalByAsset[i])}</td>`;
+    body.appendChild(tr);
   });
-
   
-  worker.onmessage = (ev)=>{
-    spin(false);
-    const t1 = performance.now();
+  drawCharts(xs, sampled, finals);
 
-    if (ev.data.error){
-      $("status").textContent = ev.data.error;
-      toast(ev.data.error);
-      return;
-    }
-
-    const {
-      xs, sampled, finals,
-      mean, median, p5, p95,
-      retAA, volAA, sharpe,
-      finalByAsset, assets: used
-    } = ev.data;
+ 
+  $("status").textContent = `Pronto em ${(t1 - t0).toFixed(0)} ms (${finals.length} caminhos).`;
+  toast("Simulação concluída");
+};
 
     $("m_mean").textContent   = "R$ " + fmtBR(mean);
     $("m_median").textContent = "R$ " + fmtBR(median);
@@ -167,20 +604,17 @@ function runSimulation(fast=false){
     $("m_rv").textContent     = `${(retAA*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
     $("m_sharpe").textContent = sharpe.toFixed(2);
 
-    const body = $("byAssetBody");
-    body.innerHTML = "";
+    const body = $("byAssetBody"); body.innerHTML = "";
     used.forEach((a,i)=>{
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${a.symbol}</td><td>${(a.weight*100).toFixed(1)}%</td>`
-                    <td>${(+a.exp_return_aa).toFixed(2)}</td><td>${(+a.vol_1y_aa).toFixed(2)}</td>`
-                    <td>R$ ${fmtBR(finalByAsset[i])}</td>`;
+      tr.innerHTML = `<td>${a.symbol}</td><td>${(a.weight*100).toFixed(1)}%</td>
+                      <td>${(+a.exp_return_aa).toFixed(2)}</td><td>${(+a.vol_1y_aa).toFixed(2)}</td>
+                      <td>R$ ${fmtBR(finalByAsset[i])}</td>`;
       body.appendChild(tr);
     });
 
     drawCharts(xs, sampled, finals);
-
     $("status").textContent = `Pronto em ${(t1 - t0).toFixed(0)} ms (${finals.length} caminhos).`;
-    toast("Simulação concluída");
   };
 }
 
@@ -190,7 +624,7 @@ document.getElementById("resetZoomPaths")?.addEventListener("click", () => {
   }
 });
   
-
+/* ========= Boot ========= */
 renderCatalog();
 // carteira demo inicial (dois ativos do catálogo)
 assets = [
@@ -206,3 +640,5 @@ window.addEventListener("load", ()=> setTimeout(()=>runSimulation(true), 250));
 <div class="spinner" id="spinner">
   <div class="dot"></div><div class="dot"></div><div class="dot"></div>
 </div>
+</body>
+</html>
