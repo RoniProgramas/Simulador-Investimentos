@@ -450,6 +450,12 @@ function runSimulation(fast=false){
   };
 }
 
+document.getElementById("resetZoomPaths")?.addEventListener("click", () => {
+  if (pathsChart && pathsChart.resetZoom) {
+    pathsChart.resetZoom();
+  }
+});
+  
 /* ========= Boot ========= */
 renderCatalog();
 // carteira demo inicial (dois ativos do catálogo)
