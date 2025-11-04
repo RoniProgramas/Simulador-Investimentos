@@ -6,6 +6,8 @@
 <title>Simulador de Carteiras </title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js" defer></script>
 <style>
   :root { --bg:#0b132b; --panel:#13294b; --accent:#00c853; --text:#eef3ff; --muted:#9fb1c9; }
   *{box-sizing:border-box}
@@ -117,7 +119,7 @@ const $ = (id) => document.getElementById(id);
 const fmtBR = (x) => x.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-/* ========= Catálogo de ativos (exemplo) ======== */
+/* ========= Catálogo de ativos ======== */
 const CATALOG = [
   {symbol:"PETR4 (Ação BR)",     exp_return_aa:12.0, vol_1y_aa:35.0},
   {symbol:"VALE3 (Ação BR)",     exp_return_aa:11.0, vol_1y_aa:30.0},
