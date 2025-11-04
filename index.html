@@ -37,7 +37,6 @@ header{
 @@ -429,68 +428,66 @@ const workerCode = `
     for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
 
-    // métricas (estimadas pela primeira amostra de caminhos para retornos mensais)
     const rets = [];
     for(let t=1;t<=months;t++){
       const prev = sampled[0][t-1], cur = sampled[0][t];
@@ -115,23 +114,23 @@ function runSimulation(fast=false){
   const sel = assets.filter(a=>a.enabled);
   if(sel.length===0){ $("status").textContent="Selecione/adicione pelo menos um ativo."; return; }
 
-  // normaliza pesos entre ativos habilitados
+
   let sum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
   if(sum<=0){ sel.forEach(a=>a.weight=1/sel.length); }
   else sel.forEach(a=>a.weight=a.weight/sum);
 
-  // aplica pesos normalizados de volta
+ 
   assets = assets.map(a=>{
     const f = sel.find(s=>s.symbol===a.symbol);
     return f ? {...a, weight:f.weight} : a;
   });
 
-  // status + spinner + carimbo de tempo
+  
   $("status").textContent = fast ? "Simulando (rápido)..." : "Simulando em segundo plano...";
   spin(true);
   const t0 = performance.now();
 
-  // manda a simulação pro worker (mesmo payload que você já tinha)
+
   worker.postMessage({
     assets: assets,
     years: params.years,
@@ -144,7 +143,7 @@ function runSimulation(fast=false){
     samplePaths: 60
   });
 
-  // recebe o resultado
+  
   worker.onmessage = (ev)=>{
     spin(false);
     const t1 = performance.now();
@@ -191,7 +190,7 @@ document.getElementById("resetZoomPaths")?.addEventListener("click", () => {
   }
 });
   
-/* ========= Boot ========= */
+
 renderCatalog();
 // carteira demo inicial (dois ativos do catálogo)
 assets = [
