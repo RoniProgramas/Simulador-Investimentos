@@ -96,8 +96,12 @@
         <div class="metric"><div class="label">Sharpe (aprox.)</div><div id="m_sharpe" class="value">—</div></div>
       </div>
 
-      <h4 style="margin-top:14px">Caminhos simulados (carteira)</h4>
-      <canvas id="chartPaths" height="260" aria-label="Gráfico de caminhos" role="img"></canvas>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:14px;margin-bottom:6px">
+        <h4 style="margin:0">Caminhos simulados (carteira)</h4>
+  <button class="btn secondary" id="resetZoomPaths" type="button">Resetar zoom</button>
+</div>
+
+<canvas id="chartPaths" height="260" aria-label="Gráfico de caminhos" role="img"></canvas>
 
       <h4 style="margin-top:14px">Distribuição do valor final</h4>
       <canvas id="chartHist" height="200" aria-label="Histograma do valor final" role="img"></canvas>
@@ -318,6 +322,13 @@ const workerCode = `
   };
 `;
 const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
+
+  document.addEventListener("DOMContentLoaded", () => {
+  if (window.Chart && window.ChartZoom) {
+    Chart.register(ChartZoom);
+  }
+});
+
 
 /* ========= Gráficos ========= */
 let pathsChart=null, histChart=null;
