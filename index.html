@@ -125,7 +125,6 @@ tbody td+td{border-left:1px solid var(--stroke)}
 .spinner .dot:nth-child(2){animation-delay:.15s} .spinner .dot:nth-child(3){animation-delay:.3s}
 @keyframes bounce{to{transform: translateY(-8px)}}
 
-/* header bar */
 .topbar{
   position:sticky; top:0; z-index:30; display:flex; justify-content:flex-end; padding:8px 16px;
   backdrop-filter: blur(8px); background:linear-gradient(180deg, rgba(0,0,0,.45), transparent);
@@ -138,6 +137,12 @@ tbody td+td{border-left:1px solid var(--stroke)}
 </head>
 <body>
 <header>
+  <div class="topbar">
+  <label class="switch">
+    <input type="checkbox" id="themeToggle">
+    Tema claro
+  </label>
+</div>
   <h1>📈 Simulador de Carteiras </h1>
   <p>Escolha ativos no catálogo → ajuste pesos → simule. </p>
 </header>
