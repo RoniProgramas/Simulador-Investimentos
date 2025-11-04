@@ -616,7 +616,6 @@ worker.onmessage = (ev)=>{
     drawCharts(xs, sampled, finals);
     $("status").textContent = `Pronto em ${(t1 - t0).toFixed(0)} ms (${finals.length} caminhos).`;
   };
-}
 
 document.getElementById("resetZoomPaths")?.addEventListener("click", () => {
   if (pathsChart && pathsChart.resetZoom) {
