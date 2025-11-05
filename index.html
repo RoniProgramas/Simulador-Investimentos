@@ -130,6 +130,36 @@ tbody td+td{border-left:1px solid var(--stroke)}
 }
 .switch{display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:.9rem}
 .switch input{width:auto}
+
+#assetsTable{ table-layout: fixed; } 
+#assetsTable col.usar {width: 64px; }
+#assetsTable col.ativo { width: 34%; }
+#assetsTable col.ret   { width: 16%; }
+#assetsTable col.vol   { width: 16%; }
+#assetsTable col.peso  { width: 14%; }
+#assetsTable col.acoes { width: 120px; }
+
+  #assetsTable td input[type="text"],
+#assetsTable td input[type="number"]{
+  width: 100%;
+  display: block;
+  font-size: 0.98rem;
+  padding: 10px 12px;
+  height: 42px;              
+  border-radius: 12px;
+
+  #assetsTable td input[type="checkbox"]{
+  width: auto; height: 18px;
+}
+  .input-sfx{ position: relative; }
+.input-sfx input{ padding-right: 28px; }
+.input-sfx::after{
+  content: attr(data-sfx);
+  position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted); font-size: .9rem; pointer-events: none;
+}
+  
 </style>
 </head>
 <body>
@@ -162,11 +192,22 @@ tbody td+td{border-left:1px solid var(--stroke)}
       <h3 style="margin-top:16px">2) Sua carteira</h3>
       <p class="small">Marque “Usar” para incluir na simulação. Pesos são normalizados automaticamente.</p>
       <table id="assetsTable" aria-label="Tabela de ativos">
-        <thead><tr>
-          <th>Usar</th><th>Ativo</th><th>Ret. a.a. (%)</th><th>Vol 1y a.a. (%)</th><th>Peso</th><th>Ações</th>
-        </tr></thead>
-        <tbody id="assetsBody"></tbody>
-      </table>
+  <colgroup>
+    <col class="usar">
+    <col class="ativo">
+    <col class="ret">
+    <col class="vol">
+    <col class="peso">
+    <col class="acoes">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Usar</th><th>Ativo</th><th>Ret. a.a. (%)</th>
+      <th>Vol 1y a.a. (%)</th><th>Peso</th><th>Ações</th>
+    </tr>
+  </thead>
+  <tbody id="assetsBody"></tbody>
+</table>
 
       <h3 style="margin-top:16px">3) Parâmetros</h3>
       <div class="row">
@@ -282,12 +323,30 @@ function renderAssets(){
   assets.forEach((a,i)=>{
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><input type="checkbox" ${a.enabled?'checked':''} data-i="${i}" data-k="enabled"></td>
-      <td><input value="${a.symbol}" data-i="${i}" data-k="symbol"></td>
-      <td><input type="number" step="0.1" value="${a.exp_return_aa}" data-i="${i}" data-k="exp_return_aa"></td>
-      <td><input type="number" step="0.1" value="${a.vol_1y_aa}" data-i="${i}" data-k="vol_1y_aa"></td>
-      <td><input type="number" step="0.01" min="0" max="1" value="${a.weight}" data-i="${i}" data-k="weight"></td>
-      <td><button class="iconbtn danger" data-i="${i}" data-action="remove">Remover</button></td>
+      <td>
+        <input type="checkbox" ${a.enabled?'checked':''} data-i="${i}" data-k="enabled">
+      </td>
+      <td>
+        <input value="${a.symbol}" data-i="${i}" data-k="symbol" title="Nome do ativo">
+      </td>
+      <td>
+        <div class="input-sfx" data-sfx="%">
+          <input type="number" step="0.1" value="${a.exp_return_aa}" data-i="${i}" data-k="exp_return_aa" title="Retorno esperado anual (%)">
+        </div>
+      </td>
+      <td>
+        <div class="input-sfx" data-sfx="%">
+          <input type="number" step="0.1" value="${a.vol_1y_aa}" data-i="${i}" data-k="vol_1y_aa" title="Volatilidade 1 ano (anualizada, %)">
+        </div>
+      </td>
+      <td>
+        <div class="input-sfx" data-sfx="">
+          <input type="number" step="0.01" min="0" max="1" value="${a.weight}" data-i="${i}" data-k="weight" title="Peso (0 a 1)">
+        </div>
+      </td>
+      <td>
+        <button class="iconbtn danger" data-i="${i}" data-action="remove">Remover</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
