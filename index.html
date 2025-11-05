@@ -189,25 +189,33 @@ tbody td+td{border-left:1px solid var(--stroke)}
         </div>
       </div>
 
-      <h3 style="margin-top:16px">2) Sua carteira</h3>
-      <p class="small">Marque “Usar” para incluir na simulação. Pesos são normalizados automaticamente.</p>
-      <table id="assetsTable" aria-label="Tabela de ativos">
-  <colgroup>
-    <col class="usar">
-    <col class="ativo">
-    <col class="ret">
-    <col class="vol">
-    <col class="peso">
-    <col class="acoes">
-  </colgroup>
-  <thead>
-    <tr>
-      <th>Usar</th><th>Ativo</th><th>Ret. a.a. (%)</th>
-      <th>Vol 1y a.a. (%)</th><th>Peso (%)</th><th>Ações</th>
-    </tr>
-  </thead>
-  <tbody id="assetsBody"></tbody>
-</table>
+<h3 style="margin-top:16px">2) Sua carteira</h3>
+<p class="small">Marque “Usar” para incluir na simulação. Pesos são normalizados automaticamente.</p>
+
+<div class="table-wrap">
+  <table id="assetsTable" aria-label="Tabela de ativos">
+    <colgroup>
+      <col class="usar">
+      <col class="ativo">
+      <col class="ret">
+      <col class="vol">
+      <col class="peso">
+      <col class="acoes">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Usar</th>
+        <th>Ativo</th>
+        <th>Ret. a.a. (%)</th>
+        <th>Vol 1y a.a. (%)</th>
+        <th>Peso (%)</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="assetsBody"></tbody>
+  </table>
+</div>
+
 
       <h3 style="margin-top:16px">3) Parâmetros</h3>
       <div class="row">
