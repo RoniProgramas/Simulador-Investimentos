@@ -159,6 +159,54 @@ tbody td+td{border-left:1px solid var(--stroke)}
   transform: translateY(-50%);
   color: var(--muted); font-size: .9rem; pointer-events: none;
 }
+
+
+.table-wrap{
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#assetsTable{
+  min-width: 920px;    
+  table-layout: fixed;      
+}
+
+#assetsTable col.usar  { width: 72px; }
+#assetsTable col.ativo { width: 320px; }
+#assetsTable col.ret   { width: 140px; }
+#assetsTable col.vol   { width: 140px; }
+#assetsTable col.peso  { width: 120px; }
+#assetsTable col.acoes { width: 120px; }
+
+#assetsTable td input[type="text"],
+#assetsTable td input[type="number"]{
+  width: 100%;
+  display: block;
+  font-size: 1rem;
+  padding: 10px 12px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  caret-color: var(--text);
+  text-overflow: clip;
+}
+
+#assetsTable td input[type="number"]{
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#assetsTable td input[type="checkbox"]{ width: auto; height: 18px; }
+
+.input-sfx{ position: relative; }
+.input-sfx input{ padding-right: 28px; }
+.input-sfx::after{
+  content: attr(data-sfx);
+  position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted); font-size: .9rem; pointer-events: none;
+}
   
 </style>
 </head>
