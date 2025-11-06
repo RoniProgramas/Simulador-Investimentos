@@ -522,12 +522,31 @@ const workerCode = `
 const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
 
 /* ========= Registra plugin de zoom ========= */
-document.addEventListener("DOMContentLoaded", () => {
-  const zoomPlugin = window["chartjs-plugin-zoom"] || window.ChartZoom;
-  if (window.Chart && zoomPlugin) {
-    Chart.register(zoomPlugin);
+(function ensureZoomPlugin(){
+  function register(){
+    const Zoom =
+     
+      window.ChartZoom ||
+      window['chartjs-plugin-zoom'] ||
+      window.chartjsPluginZoom ||
+      null;
+
+    if (window.Chart && Zoom){
+    
+      if (!Chart.registry.plugins.get('zoom')) {
+        Chart.register(Zoom);
+      }
+     
+    } else {
+      console.warn('chartjs-plugin-zoom não encontrado ainda — tentando novamente…');
+      
+      setTimeout(register, 50);
+    }
   }
-});
+  // garante rodar após os scripts com defer
+  if (document.readyState === 'complete') register();
+  else window.addEventListener('load', register);
+})();
 
 /* ========= Gráficos ========= */
 let pathsChart=null, histChart=null;
