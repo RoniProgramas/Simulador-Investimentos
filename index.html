@@ -10,7 +10,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#0b132b">
 
-<!-- Chart.js (sem plugin) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <style>
@@ -38,13 +37,13 @@ header p{margin:.5rem auto 0; color:var(--muted); max-width:920px}
 
 .container{max-width:1400px; margin:18px auto; padding:0 16px}
 
-/* >>> grid 50/50 (pode trocar pra 40/60 se quiser) */
+
 .grid{
   display:grid;
   grid-template-columns: minmax(0,1fr) minmax(0,1fr);
   gap:16px;
 }
-.grid > .card{ min-width:0; } /* permite encolher */
+.grid > .card{ min-width:0; } 
 @media (max-width:1100px){ .grid{ grid-template-columns:1fr } }
 
 .card{
@@ -104,7 +103,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
 
 .status{margin-top:8px; color:var(--muted); font-size:.9rem; min-height:1.4em}
 
-/* Tabela flexível (não trava a coluna esquerda) */
+
 .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
 #assetsTable{ width:100%; table-layout:fixed; }
 #assetsTable col.usar  { width:64px; }
@@ -129,11 +128,11 @@ tbody td+td{border-left:1px solid var(--stroke)}
   color:var(--muted); font-size:.9rem; pointer-events:none;
 }
 
-/* Toolbar dos botões de zoom/pan */
+
 .chart-toolbar .btn{ padding:8px 10px; font-weight:600; }
 .chart-toolbar .btn + .btn{ margin-left:6px; }
 
-/* toast + spinner (mantidos) */
+
 .toast{
   position:fixed; right:18px; bottom:18px; background:var(--panel); color:var(--text);
   border:1px solid var(--stroke); padding:10px 14px; border-radius:12px; box-shadow:var(--shadow);
@@ -221,7 +220,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
         <div class="metric"><div class="label">Sharpe (aprox.)</div><div id="m_sharpe" class="value">—</div></div>
       </div>
 
-      <!-- Título + toolbar -->
+      
       <div style="display:flex;align-items:center;gap:8px;margin-top:14px;margin-bottom:6px">
         <h4 style="margin:0">Caminhos simulados (carteira)</h4>
         <div class="chart-toolbar" style="margin-left:auto">
@@ -254,7 +253,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
 </div>
 
 <script>
-/* ===== helpers visuais ===== */
+
 function toast(msg, ms=2400){
   const el = document.getElementById("toast");
   if(!el) return; el.textContent = msg; el.classList.add("show");
@@ -265,7 +264,7 @@ function spin(on){
   if(!s) return; s.classList.toggle("show", !!on);
 }
 
-/* ===== helpers ===== */
+
 const $ = (id) => document.getElementById(id);
 const fmtBR = (x) => x.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
