@@ -10,7 +10,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#0b132b">
 
-<!-- Chart.js (sem plugin) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <style>
@@ -38,13 +37,13 @@ header p{margin:.5rem auto 0; color:var(--muted); max-width:920px}
 
 .container{max-width:1400px; margin:18px auto; padding:0 16px}
 
-/* grid 50/50 */
+
 .grid{
   display:grid;
   grid-template-columns: minmax(0,1fr) minmax(0,1fr);
   gap:16px;
 }
-.grid > .card{ min-width:0; }
+.grid > .card{ min-width:0; } 
 @media (max-width:1100px){ .grid{ grid-template-columns:1fr } }
 
 .card{
@@ -104,7 +103,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
 
 .status{margin-top:8px; color:var(--muted); font-size:.9rem; min-height:1.4em}
 
-/* Tabela flexível */
+
 .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
 #assetsTable{ width:100%; table-layout:fixed; }
 #assetsTable col.usar  { width:64px; }
@@ -129,11 +128,11 @@ tbody td+td{border-left:1px solid var(--stroke)}
   color:var(--muted); font-size:.9rem; pointer-events:none;
 }
 
-/* Toolbar dos botões de zoom/pan */
+
 .chart-toolbar .btn{ padding:8px 10px; font-weight:600; }
 .chart-toolbar .btn + .btn{ margin-left:6px; }
 
-/* toast + spinner */
+
 .toast{
   position:fixed; right:18px; bottom:18px; background:var(--panel); color:var(--text);
   border:1px solid var(--stroke); padding:10px 14px; border-radius:12px; box-shadow:var(--shadow);
@@ -221,7 +220,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
         <div class="metric"><div class="label">Sharpe (aprox.)</div><div id="m_sharpe" class="value">—</div></div>
       </div>
 
-      <!-- Título + toolbar -->
+      
       <div style="display:flex;align-items:center;gap:8px;margin-top:14px;margin-bottom:6px">
         <h4 style="margin:0">Caminhos simulados (carteira)</h4>
         <div class="chart-toolbar" style="margin-left:auto">
@@ -254,7 +253,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
 </div>
 
 <script>
-/* ========= helpers visuais ========= */
+
 function toast(msg, ms=2400){
   const el = document.getElementById("toast");
   if(!el) return; el.textContent = msg; el.classList.add("show");
@@ -265,12 +264,12 @@ function spin(on){
   if(!s) return; s.classList.toggle("show", !!on);
 }
 
-/* ========= helpers ========= */
+
 const $ = (id) => document.getElementById(id);
 const fmtBR = (x) => x.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-/* ========= catálogo ========= */
+/* ===== catálogo de ativos ===== */
 const CATALOG = [
   {symbol:"PETR4 (Ação BR)",     exp_return_aa:12.0, vol_1y_aa:35.0},
   {symbol:"VALE3 (Ação BR)",     exp_return_aa:11.0, vol_1y_aa:30.0},
@@ -283,19 +282,16 @@ const CATALOG = [
   {symbol:"Dólar (USD/BRL)",     exp_return_aa:5.0,  vol_1y_aa:18.0},
 ];
 
-/* ========= estado ========= */
-let assets = [];
-let worker = null;               // será criado no boot
-let supportsWorker = true;       // fallback se necessário
+/* ===== estado ===== */
+let assets = []; // {enabled, symbol, exp_return_aa, vol_1y_aa, weight}
 
-/* ========= UI catálogo/carteira ========= */
+/* ===== UI catálogo/carteira ===== */
 function renderCatalog(){
   const select = $("catalogSelect");
-  if(!select) return;
   select.innerHTML = "";
   CATALOG.forEach((a, idx)=>{
     const opt = document.createElement("option");
-    opt.value = String(idx);
+    opt.value = idx;
     opt.textContent = `${a.symbol} — Ret ${a.exp_return_aa}% • Vol ${a.vol_1y_aa}%`;
     select.appendChild(opt);
   });
@@ -303,7 +299,6 @@ function renderCatalog(){
 }
 function renderAssets(){
   const tbody = $("assetsBody");
-  if(!tbody) return;
   tbody.innerHTML = "";
   assets.forEach((a,i)=>{
     const tr = document.createElement("tr");
@@ -321,8 +316,10 @@ function renderAssets(){
 function addSelectedAsset(){
   const sel = $("catalogSelect");
   if (!sel || sel.options.length === 0){ $("status").textContent = "Catálogo vazio."; return; }
+  if (sel.selectedIndex < 0) sel.selectedIndex = 0;
   const idx = Number.parseInt(sel.value);
-  const item = CATALOG[Number.isFinite(idx)? idx : 0];
+  const safeIdx = Number.isFinite(idx) ? idx : 0;
+  const item = CATALOG[safeIdx];
   if(!item){ $("status").textContent = "Ativo inválido."; return; }
   if(assets.some(a => a.symbol === item.symbol)){
     $("status").textContent = "Esse ativo já está na carteira."; return;
@@ -339,7 +336,7 @@ function normalizeWeights(){
   if(sum <= 1e-9){ assets.forEach(a=>{ if(a.enabled) a.weight = equal; }); }
   else { assets.forEach(a=>{ if(a.enabled) a.weight = a.weight / sum; }); }
 }
-$("assetsBody")?.addEventListener("input", (e)=>{
+$("assetsBody").addEventListener("input", (e)=>{
   const i = +e.target.dataset.i;
   const k = e.target.dataset.k;
   if (i == null || !k) return;
@@ -349,7 +346,7 @@ $("assetsBody")?.addEventListener("input", (e)=>{
   if (k === "weight"){ const pct = isFinite(raw) ? clamp(raw, 0, 100) : 0; assets[i].weight = pct / 100; return; }
   assets[i][k] = isFinite(raw) ? raw : 0;
 });
-$("assetsBody")?.addEventListener("click", (e)=>{
+$("assetsBody").addEventListener("click", (e)=>{
   const act = e.target.dataset.action;
   if(act==="remove"){
     const i = +e.target.dataset.i;
@@ -358,107 +355,100 @@ $("assetsBody")?.addEventListener("click", (e)=>{
     $("status").textContent = `Ativo "${removed.symbol}" removido.`;
   }
 });
-$("addAssetBtn")?.addEventListener("click", addSelectedAsset);
+$("addAssetBtn").addEventListener("click", addSelectedAsset);
 
-/* ========= Monte Carlo (worker + fallback) ========= */
-function makeWorker(){
-  try{
-    const code = `
-      const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
-      function monthlyRateFromAnnual(pctAA){ return Math.pow(1 + pctAA/100, 1/12) - 1; }
-      function monthlyVolFromAnnual(pctAA){ return (pctAA/100)/Math.sqrt(12); }
-      function LCG(seed=12345){ let s = seed>>>0; return ()=>{ s = (1664525*s + 1013904223) >>> 0; return s / 4294967296; }; }
-      function randn(rng){ const u1=Math.max(rng(),1e-12), u2=rng(); return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); }
-      function cholesky(A){
-        const n=A.length; const L=Array.from({length:n},()=>Array(n).fill(0));
-        for(let i=0;i<n;i++){
-          for(let j=0;j<=i;j++){
-            let sum = A[i][j];
-            for(let k=0;k<j;k++) sum -= L[i][k]*L[j][k];
-            if(i===j){ L[i][j] = Math.sqrt(Math.max(sum,1e-12)); }
-            else { L[i][j] = sum / L[j][j]; }
-          }
-        }
-        return L;
+/* ===== Worker Monte Carlo ===== */
+const workerCode = `
+  const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+  function monthlyRateFromAnnual(pctAA){ return Math.pow(1 + pctAA/100, 1/12) - 1; }
+  function monthlyVolFromAnnual(pctAA){ return (pctAA/100)/Math.sqrt(12); }
+  function LCG(seed=12345){ let s = seed>>>0; return ()=>{ s = (1664525*s + 1013904223) >>> 0; return s / 4294967296; }; }
+  function randn(rng){ const u1=Math.max(rng(),1e-12), u2=rng(); return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); }
+  function cholesky(A){
+    const n=A.length; const L=Array.from({length:n},()=>Array(n).fill(0));
+    for(let i=0;i<n;i++){
+      for(let j=0;j<=i;j++){
+        let sum = A[i][j];
+        for(let k=0;k<j;k++) sum -= L[i][k]*L[j][k];
+        if(i===j){ L[i][j] = Math.sqrt(Math.max(sum,1e-12)); }
+        else { L[i][j] = sum / L[j][j]; }
       }
-      onmessage = (e)=>{
-        const {assets, years, npaths, rho, rfAA, S0, aport, seed, samplePaths} = e.data;
-        const sel = assets.filter(a=>a.enabled);
-        const k = sel.length;
-        if(k===0){ postMessage({error:"Nenhum ativo selecionado."}); return; }
-        let wsum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
-        if(wsum<=0){ wsum = k; sel.forEach(a=>a.weight=1/k); } else sel.forEach(a=>a.weight=a.weight/wsum);
-        const muM = sel.map(a=>Math.pow(1+a.exp_return_aa/100,1/12)-1);
-        const sigM = sel.map(a=>(a.vol_1y_aa/100)/Math.sqrt(12));
-        const w = sel.map(a=>a.weight);
-        const C = Array.from({length:k},()=>Array(k).fill(0));
-        for(let i=0;i<k;i++)for(let j=0;j<k;j++) C[i][j] = (i===j? sigM[i]*sigM[i] : rho*sigM[i]*sigM[j]);
-        let jitter=1e-12; let L=null;
-        while(true){
-          try{
-            const Cj = C.map((row,i)=>row.map((v,j)=> v + (i===j?jitter:0)));
-            L = cholesky(Cj); break;
-          }catch{ jitter*=10; if(jitter>1e-3){ postMessage({error:"Matriz de covariância inválida."}); return; } }
-        }
-        const months = years*12;
-        const rng = LCG(seed);
-        const keep = Math.min(samplePaths, npaths);
-        const xs = Array(months+1).fill(0).map((_,i)=>i);
-        const sampled = Array.from({length:keep}, ()=> new Float64Array(months+1));
-        for(let j=0;j<keep;j++) sampled[j][0] = S0;
-        const finals = new Float64Array(npaths);
-        const finalByAsset = new Float64Array(k);
-        for(let p=0;p<npaths;p++){
-          let S = w.map(wi=>S0*wi);
-          for(let t=1;t<=months;t++){
-            const u = Array.from({length:k},()=>{ const a=rng(), b=rng(); return Math.sqrt(-2*Math.log(Math.max(a,1e-12)))*Math.cos(2*Math.PI*b); });
-            const z = L.map(row=>row.reduce((s,v,idx)=>s+v*u[idx],0));
-            for(let i=0;i<k;i++){
-              const growth = Math.exp((muM[i] - 0.5*sigM[i]*sigM[i]) + sigM[i]*z[i]);
-              S[i] *= growth;
-            }
-            if(aport>0) for(let i=0;i<k;i++) S[i] += aport*w[i];
-            if(p<keep){
-              const total = S.reduce((s,v)=>s+v,0);
-              sampled[p][t] = total;
-            }
-          }
-          finals[p] = S.reduce((s,v)=>s+v,0);
-          for(let i=0;i<k;i++) finalByAsset[i]+=S[i];
-        }
-        for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
-        const rets = [];
-        for(let t=1;t<=months;t++){
-          const prev = sampled[0][t-1], cur = sampled[0][t];
-          if(prev>0) rets.push(cur/prev - 1);
-        }
-        const mean = finals.reduce((s,v)=>s+v,0)/npaths;
-        const sorted = Array.from(finals).sort((a,b)=>a-b);
-        const median = sorted.length%2? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
-        const p5 = sorted[Math.floor((sorted.length-1)*0.05)];
-        const p95 = sorted[Math.floor((sorted.length-1)*0.95)];
-        const mean_m = rets.reduce((s,v)=>s+v,0)/rets.length;
-        const var_m = rets.reduce((s,v)=>s+(v-mean_m)*(v-mean_m),0)/rets.length;
-        const std_m = Math.sqrt(Math.max(0,var_m));
-        const retAA = Math.pow(1+mean_m,12)-1;
-        const volAA = std_m*Math.sqrt(12);
-        const sharpe = (retAA - rfAA) / (volAA + 1e-12);
-        postMessage({ xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: sel });
-      };
-    `;
-    const blob = new Blob([code], { type: 'application/javascript' });
-    return new Worker(URL.createObjectURL(blob));
-  }catch(err){
-    console.error('Falha ao criar Web Worker:', err);
-    return null;
+    }
+    return L;
   }
-}
+  onmessage = (e)=>{
+    const {assets, years, npaths, rho, rfAA, S0, aport, seed, samplePaths} = e.data;
+    const sel = assets.filter(a=>a.enabled);
+    const k = sel.length;
+    if(k===0){ postMessage({error:"Nenhum ativo selecionado."}); return; }
+    let wsum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
+    if(wsum<=0){ wsum = k; sel.forEach(a=>a.weight=1/k); } else sel.forEach(a=>a.weight=a.weight/wsum);
+    const muM = sel.map(a=>monthlyRateFromAnnual(a.exp_return_aa));
+    const sigM = sel.map(a=>monthlyVolFromAnnual(a.vol_1y_aa));
+    const w = sel.map(a=>a.weight);
+    const C = Array.from({length:k},()=>Array(k).fill(0));
+    for(let i=0;i<k;i++)for(let j=0;j<k;j++) C[i][j] = (i===j? sigM[i]*sigM[i] : rho*sigM[i]*sigM[j]);
+    let jitter=1e-12; let L=null;
+    while(true){
+      try{
+        const Cj = C.map((row,i)=>row.map((v,j)=> v + (i===j?jitter:0)));
+        L = cholesky(Cj); break;
+      }catch{ jitter*=10; if(jitter>1e-3){ postMessage({error:"Matriz de covariância inválida."}); return; } }
+    }
+    const months = years*12;
+    const rng = LCG(seed);
+    const keep = Math.min(samplePaths, npaths);
+    const xs = Array(months+1).fill(0).map((_,i)=>i);
+    const sampled = Array.from({length:keep}, ()=> new Float64Array(months+1));
+    for(let j=0;j<keep;j++) sampled[j][0] = S0;
+    const finals = new Float64Array(npaths);
+    const finalByAsset = new Float64Array(k);
+    for(let p=0;p<npaths;p++){
+      let S = w.map(wi=>S0*wi);
+      for(let t=1;t<=months;t++){
+        const u = Array.from({length:k},()=>randn(rng));
+        const z = L.map(row=>row.reduce((s,v,idx)=>s+v*u[idx],0));
+        for(let i=0;i<k;i++){
+          const growth = Math.exp((muM[i] - 0.5*sigM[i]*sigM[i]) + sigM[i]*z[i]);
+          S[i] *= growth;
+        }
+        if(aport>0) for(let i=0;i<k;i++) S[i] += aport*w[i];
+        if(p<keep){
+          const total = S.reduce((s,v)=>s+v,0);
+          sampled[p][t] = total;
+        }
+      }
+      finals[p] = S.reduce((s,v)=>s+v,0);
+      for(let i=0;i<k;i++) finalByAsset[i]+=S[i];
+    }
+    for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
+    const rets = [];
+    for(let t=1;t<=months;t++){
+      const prev = sampled[0][t-1], cur = sampled[0][t];
+      if(prev>0) rets.push(cur/prev - 1);
+    }
+    const mean = finals.reduce((s,v)=>s+v,0)/npaths;
+    const sorted = Array.from(finals).sort((a,b)=>a-b);
+    const median = sorted.length%2? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
+    const p5 = sorted[Math.floor((sorted.length-1)*0.05)];
+    const p95 = sorted[Math.floor((sorted.length-1)*0.95)];
+    const mean_m = rets.reduce((s,v)=>s+v,0)/rets.length;
+    const var_m = rets.reduce((s,v)=>s+(v-mean_m)*(v-mean_m),0)/rets.length;
+    const std_m = Math.sqrt(Math.max(0,var_m));
+    const retAA = Math.pow(1+mean_m,12)-1;
+    const volAA = std_m*Math.sqrt(12);
+    const sharpe = (retAA - rfAA) / (volAA + 1e-12);
+    postMessage({ xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: sel });
+  };
+`;
+const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
 
-/* ========= Gráficos + zoom por botões ========= */
+/* ===== Gráficos + zoom por botões ===== */
 let pathsChart=null, histChart=null;
-let view=null, baseRange=null;
+let view=null, baseRange=null; // janela atual e limites base
 
 function drawCharts(xs, sampled, finals){
+  // PATHS
   const ctx1 = $("chartPaths").getContext("2d");
   if(pathsChart) pathsChart.destroy();
 
@@ -467,6 +457,7 @@ function drawCharts(xs, sampled, finals){
     datasets.push({ label: j===0 ? "Carteira" : undefined, data: Array.from(sampled[j]), pointRadius:0, borderWidth:1, tension:.12 });
   }
 
+  // limites base
   let yMin = Infinity, yMax = -Infinity;
   for (let j=0;j<sampled.length;j++){
     const arr = sampled[j];
@@ -492,6 +483,7 @@ function drawCharts(xs, sampled, finals){
     }
   });
 
+  // HIST
   const ctx2 = $("chartHist").getContext("2d");
   if(histChart) histChart.destroy();
   const nbins=30; const min=Math.min(...finals), max=Math.max(...finals);
@@ -545,7 +537,7 @@ function panX(pct=0.2){
 }
 function fit(){ if(baseRange){ view = { ...baseRange }; applyView(); } }
 
-/* ========= Simulação ========= */
+/* ===== Simulação ===== */
 function captureParams(){
   return {
     years: parseInt($("years").value)||10,
@@ -557,105 +549,10 @@ function captureParams(){
     aport: parseFloat($("aport").value)||0
   };
 }
-
-function simulateOnMainThread(payload){
- 
-  return new Promise((resolve, reject)=>{
-    try{
-      const {assets, years, npaths, rho, rfAA, S0, aport, seed, samplePaths} = payload;
-      const sel = assets.filter(a=>a.enabled);
-      const k = sel.length;
-      if(k===0) throw new Error("Nenhum ativo selecionado.");
-
-      let wsum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
-      if(wsum<=0){ wsum = k; sel.forEach(a=>a.weight=1/k); } else sel.forEach(a=>a.weight=a.weight/wsum);
-
-      const muM = sel.map(a=>Math.pow(1+a.exp_return_aa/100,1/12)-1);
-      const sigM = sel.map(a=>(a.vol_1y_aa/100)/Math.sqrt(12));
-      const w = sel.map(a=>a.weight);
-
-      const C = Array.from({length:k},()=>Array(k).fill(0));
-      for(let i=0;i<k;i++)for(let j=0;j<k;j++) C[i][j] = (i===j? sigM[i]*sigM[i] : rho*sigM[i]*sigM[j]);
-
- 
-      function cholesky(A){
-        const n=A.length; const L=Array.from({length:n},()=>Array(n).fill(0));
-        for(let i=0;i<n;i++){
-          for(let j=0;j<=i;j++){
-            let sum = A[i][j];
-            for(let k=0;k<j;k++) sum -= L[i][k]*L[j][k];
-            if(i===j){ L[i][j] = Math.sqrt(Math.max(sum,1e-12)); }
-            else { L[i][j] = sum / L[j][j]; }
-          }
-        }
-        return L;
-      }
-      let jitter=1e-12, L=null;
-      while(true){
-        try{
-          const Cj = C.map((row,i)=>row.map((v,j)=> v + (i===j?jitter:0)));
-          L = cholesky(Cj); break;
-        }catch{ jitter*=10; if(jitter>1e-3){ throw new Error("Matriz de covariância inválida."); } }
-      }
-
-      function LCG(seed=12345){ let s = seed>>>0; return ()=>{ s = (1664525*s + 1013904223) >>> 0; return s / 4294967296; }; }
-      function randn(rng){ const u1=Math.max(rng(),1e-12), u2=rng(); return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); }
-
-      const months = years*12;
-      const rng = LCG(seed);
-      const keep = Math.min(samplePaths, npaths);
-      const xs = Array(months+1).fill(0).map((_,i)=>i);
-      const sampled = Array.from({length:keep}, ()=> new Float64Array(months+1));
-      for(let j=0;j<keep;j++) sampled[j][0] = S0;
-      const finals = new Float64Array(npaths);
-      const finalByAsset = new Float64Array(k);
-
-      for(let p=0;p<npaths;p++){
-        let S = w.map(wi=>S0*wi);
-        for(let t=1;t<=months;t++){
-          const u = Array.from({length:k},()=>randn(rng));
-          const z = L.map(row=>row.reduce((s,v,idx)=>s+v*u[idx],0));
-          for(let i=0;i<k;i++){
-            const growth = Math.exp((muM[i] - 0.5*sigM[i]*sigM[i]) + sigM[i]*z[i]);
-            S[i] *= growth;
-          }
-          if(aport>0) for(let i=0;i<k;i++) S[i] += aport*w[i];
-          if(p<keep){ sampled[p][t] = S.reduce((s,v)=>s+v,0); }
-        }
-        finals[p] = S.reduce((s,v)=>s+v,0);
-        for(let i=0;i<k;i++) finalByAsset[i]+=S[i];
-      }
-      for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
-
-      const rets = [];
-      for(let t=1;t<=months;t++){
-        const prev = sampled[0][t-1], cur = sampled[0][t];
-        if(prev>0) rets.push(cur/prev - 1);
-      }
-      const mean = finals.reduce((s,v)=>s+v,0)/npaths;
-      const sorted = Array.from(finals).sort((a,b)=>a-b);
-      const median = sorted.length%2? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
-      const p5 = sorted[Math.floor((sorted.length-1)*0.05)];
-      const p95 = sorted[Math.floor((sorted.length-1)*0.95)];
-      const mean_m = rets.reduce((s,v)=>s+v,0)/rets.length;
-      const var_m = rets.reduce((s,v)=>s+(v-mean_m)*(v-mean_m),0)/rets.length;
-      const std_m = Math.sqrt(Math.max(0,var_m));
-      const retAA = Math.pow(1+mean_m,12)-1;
-      const volAA = std_m*Math.sqrt(12);
-      const sharpe = (retAA - rfAA) / (volAA + 1e-12);
-
-      resolve({ xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: sel });
-    }catch(err){ reject(err); }
-  });
-}
-
-let pathsChart=nullRef; 
-  
 function runSimulation(fast=false){
   const params = captureParams();
   const sel = assets.filter(a=>a.enabled);
   if(sel.length===0){ $("status").textContent="Selecione/adicione pelo menos um ativo."; return; }
-
   let sum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
   if(sum<=0){ sel.forEach(a=>a.weight=1/sel.length); }
   else sel.forEach(a=>a.weight=a.weight/sum);
@@ -665,7 +562,7 @@ function runSimulation(fast=false){
   spin(true);
   const t0 = performance.now();
 
-  const payload = {
+  worker.postMessage({
     assets: assets,
     years: params.years,
     npaths: fast ? Math.max(50, Math.floor(params.npaths/5)) : params.npaths,
@@ -675,85 +572,56 @@ function runSimulation(fast=false){
     aport: params.aport,
     seed: params.seed,
     samplePaths: 60
-  };
-
-  if (supportsWorker && worker){
-    worker.onmessage = (ev)=>{
-      spin(false);
-      const t1 = performance.now();
-      if(ev.data.error){ $("status").textContent = ev.data.error; toast(ev.data.error); return; }
-      renderResults(ev.data, t0, t1);
-    };
-    worker.postMessage(payload);
-  } else {
-    simulateOnMainThread(payload).then((data)=>{
-      spin(false);
-      const t1 = performance.now();
-      renderResults(data, t0, t1);
-    }).catch(err=>{
-      spin(false);
-      $("status").textContent = String(err.message || err);
-      toast(String(err.message || err));
-    });
-  }
-}
-
-function renderResults(data, t0, t1){
-  const { xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: used } = data;
-
-  $("m_mean").textContent   = "R$ " + fmtBR(mean);
-  $("m_median").textContent = "R$ " + fmtBR(median);
-  $("m_p").textContent      = `P5: R$ ${fmtBR(p5)} | P95: R$ ${fmtBR(p95)}`;
-  $("m_rv").textContent     = `${(retAA*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
-  $("m_sharpe").textContent = sharpe.toFixed(2);
-
-  const body = $("byAssetBody"); body.innerHTML = "";
-  used.forEach((a,i)=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${a.symbol}</td><td>${(a.weight*100).toFixed(1)}%</td>
-                    <td>${(+a.exp_return_aa).toFixed(2)}</td><td>${(+a.vol_1y_aa).toFixed(2)}</td>
-                    <td>R$ ${fmtBR(finalByAsset[i])}</td>`;
-    body.appendChild(tr);
   });
 
-  drawCharts(xs, sampled, finals);
-  $("status").textContent = `Pronto em ${(t1 - t0).toFixed(0)} ms (${finals.length} caminhos).`;
-  toast("Simulação concluída");
+  worker.onmessage = (ev)=>{
+    spin(false);
+    const t1 = performance.now();
+    if(ev.data.error){ $("status").textContent = ev.data.error; toast(ev.data.error); return; }
+    const { xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: used } = ev.data;
+
+    $("m_mean").textContent   = "R$ " + fmtBR(mean);
+    $("m_median").textContent = "R$ " + fmtBR(median);
+    $("m_p").textContent      = `P5: R$ ${fmtBR(p5)} | P95: R$ ${fmtBR(p95)}`;
+    $("m_rv").textContent     = `${(retAA*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
+    $("m_sharpe").textContent = sharpe.toFixed(2);
+
+    const body = $("byAssetBody"); body.innerHTML = "";
+    used.forEach((a,i)=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${a.symbol}</td><td>${(a.weight*100).toFixed(1)}%</td>
+                      <td>${(+a.exp_return_aa).toFixed(2)}</td><td>${(+a.vol_1y_aa).toFixed(2)}</td>
+                      <td>R$ ${fmtBR(finalByAsset[i])}</td>`;
+      body.appendChild(tr);
+    });
+
+    drawCharts(xs, sampled, finals);
+    $("status").textContent = `Pronto em ${(t1 - t0).toFixed(0)} ms (${finals.length} caminhos).`;
+    toast("Simulação concluída");
+  };
 }
 
-
-function boot(){
-
-  renderCatalog();
-  assets = [
-    {enabled:true,  symbol:CATALOG[2].symbol, exp_return_aa:CATALOG[2].exp_return_aa, vol_1y_aa:CATALOG[2].vol_1y_aa, weight:0.5},
-    {enabled:true,  symbol:CATALOG[6].symbol, exp_return_aa:CATALOG[6].exp_return_aa, vol_1y_aa:CATALOG[6].vol_1y_aa, weight:0.5},
-  ];
-  renderAssets();
-
- 
-  worker = makeWorker();
-  if (!worker){
-    supportsWorker = false;
-    $("status").textContent = "Executando sem Web Worker (fallback).";
-  }
-
-  $("runBtn")?.addEventListener("click", ()=>runSimulation(false));
-  $("sampleBtn")?.addEventListener("click", ()=>runSimulation(true));
-
-  
-  setTimeout(()=>runSimulation(true), 250);
-}
-window.addEventListener('load', boot);
-
+/* ===== Eventos dos botões de zoom/pan ===== */
 $("zoomIn")   ?.addEventListener("click", ()=>zoomIn(0.8));
 $("zoomOut")  ?.addEventListener("click", ()=>zoomOut(0.8));
 $("panLeft")  ?.addEventListener("click", ()=>panX(-0.2));
 $("panRight") ?.addEventListener("click", ()=>panX(+0.2));
 $("fit")      ?.addEventListener("click", fit);
 $("resetZoomPaths")?.addEventListener("click", fit);
+
+/* ===== Boot ===== */
+renderCatalog();
+assets = [
+  {enabled:true,  symbol:CATALOG[2].symbol, exp_return_aa:CATALOG[2].exp_return_aa, vol_1y_aa:CATALOG[2].vol_1y_aa, weight:0.5},
+  {enabled:true,  symbol:CATALOG[6].symbol, exp_return_aa:CATALOG[6].exp_return_aa, vol_1y_aa:CATALOG[6].vol_1y_aa, weight:0.5},
+];
+renderAssets();
+$("runBtn").addEventListener("click", ()=>runSimulation(false));
+$("sampleBtn").addEventListener("click", ()=>runSimulation(true));
+window.addEventListener("load", ()=> setTimeout(()=>runSimulation(true), 250));
 </script>
 
+<!-- toast & spinner -->
 <div class="toast" id="toast"></div>
 <div class="spinner" id="spinner">
   <div class="dot"></div><div class="dot"></div><div class="dot"></div>
