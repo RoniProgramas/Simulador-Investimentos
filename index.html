@@ -38,7 +38,7 @@ header h1{margin:0; font-size:1.75rem; letter-spacing:.2px}
 header p{margin:.5rem auto 0; color:var(--muted); max-width:920px}
 
 .container{max-width:1360px; margin:18px auto; padding:0 16px}
-.grid{display:grid; grid-template-columns:2fr 3fr; gap:16px}
+.grid{display:grid; grid-template-columns:1.2fr 1.8fr; gap:16px}
 @media (max-width:1024px){.grid{grid-template-columns:1fr}}
 
 .card{
@@ -242,12 +242,12 @@ tbody td+td{border-left:1px solid var(--stroke)}
         <button class="btn secondary" id="resetZoomPaths" type="button" style="margin-left:auto">Resetar zoom</button>
       </div>
       <div class="canvas-wrap">
-        <canvas id="chartPaths" height="260" aria-label="Gráfico de caminhos" role="img"></canvas>
+        <canvas id="chartPaths" height="300" aria-label="Gráfico de caminhos" role="img"></canvas>
       </div>
 
       <h4 style="margin-top:14px">Distribuição do valor final</h4>
       <div class="canvas-wrap">
-        <canvas id="chartHist" height="200" aria-label="Histograma do valor final" role="img"></canvas>
+        <canvas id="chartHist" height="220" aria-label="Histograma do valor final" role="img"></canvas>
       </div>
 
       <h4 style="margin-top:16px">Contribuição média por ativo (valor final)</h4>
