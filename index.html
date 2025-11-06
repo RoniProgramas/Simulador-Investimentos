@@ -11,6 +11,9 @@
 <meta name="theme-color" content="#0b132b">
 
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js" defer></script>
+
 <style>
 :root{
   --bg:#0b132b; --bg-2:#0e1b39; --panel:#0f1f3f; --stroke:#223a6a;
@@ -266,29 +269,6 @@ tbody td+td{border-left:1px solid var(--stroke)}
   </div>
 </div>
 
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js"></script>
-
-
-<script>
-  (function(){
-    const Zoom =
-      (window['chartjs-plugin-zoom'] && (window['chartjs-plugin-zoom'].default || window['chartjs-plugin-zoom'])) ||
-      window.ChartZoom ||
-      window.chartjsPluginZoom ||
-      null;
-
-    if (!window.Chart) { console.error('Chart.js não carregou'); return; }
-    if (!Zoom) { console.error('chartjs-plugin-zoom não carregou'); return; }
-
-    // evita registrar duas vezes
-    if (!Chart.registry.plugins.get('zoom')) {
-      Chart.register(Zoom);
-    }
-  })();
-</script>
-
 <script>
 /* ========= Helpers visuais ========= */
 const root = document.documentElement;
@@ -542,6 +522,7 @@ const workerCode = `
 const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
 
 /* ========= Registra plugin de zoom ========= */
+(function ensureZoomPlugin(){
   function register(){
     const Zoom =
      
