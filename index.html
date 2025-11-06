@@ -10,7 +10,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#0b132b">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js" defer></script>
 
 <style>
 :root{
@@ -35,16 +37,17 @@ header{
 header h1{margin:0; font-size:1.75rem; letter-spacing:.2px}
 header p{margin:.5rem auto 0; color:var(--muted); max-width:920px}
 
-.container{max-width:1400px; margin:18px auto; padding:0 16px}
-
-
+.container{max-width:1360px; margin:18px auto; padding:0 16px}
 .grid{
   display:grid;
-  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  grid-template-columns: 50% 50%;
   gap:16px;
 }
-.grid > .card{ min-width:0; } 
-@media (max-width:1100px){ .grid{ grid-template-columns:1fr } }
+.grid > .card{ min-width:0; }
+
+@media (max-width:1100px){
+  .grid{ grid-template-columns:1fr; }
+}
 
 .card{
   background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
@@ -88,6 +91,12 @@ tbody td+td{border-left:1px solid var(--stroke)}
 .iconbtn{background:#11254b; border:1px solid #2a4275; color:#e7eeff; border-radius:8px; padding:6px 10px; cursor:pointer}
 .iconbtn.danger{background:#4b1120; border-color:#7a2840}
 
+.chips{display:flex; gap:8px; flex-wrap:wrap}
+.chip{
+  background:var(--panel); border:1px solid var(--stroke); color:var(--muted);
+  padding:6px 10px; border-radius:999px; font-size:.85rem;
+}
+
 .canvas-wrap{
   background:var(--panel); border:1px solid var(--stroke); border-radius:14px; padding:8px;
   box-shadow:var(--shadow);
@@ -101,9 +110,10 @@ tbody td+td{border-left:1px solid var(--stroke)}
 .metric .label{color:var(--muted); font-size:.8rem}
 .metric .value{font-size:1.06rem; font-weight:700; margin-top:4px}
 
+.actions{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0}
 .status{margin-top:8px; color:var(--muted); font-size:.9rem; min-height:1.4em}
 
-
+/* ====== TABELA: visualização nítida ====== */
 .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
 #assetsTable{ width:100%; table-layout:fixed; }
 #assetsTable col.usar  { width:64px; }
@@ -115,24 +125,17 @@ tbody td+td{border-left:1px solid var(--stroke)}
 
 #assetsTable td input[type="text"],
 #assetsTable td input[type="number"]{
-  width:100%; display:block; font-size:1rem; padding:10px 12px; height:42px;
-  border-radius:12px; background:var(--panel); color:var(--text); caret-color:var(--text);
+  width:100%; min-width:90px;
+  height:44px; padding:10px 12px;
+  font-size:1rem; font-variant-numeric:tabular-nums;
+  background:var(--panel); color:var(--text);
+  border-radius:12px; caret-color:var(--text);
+  text-overflow:clip;
 }
-#assetsTable td input[type="number"]{ text-align:right; font-variant-numeric:tabular-nums; }
+#assetsTable td input[type="number"]{ text-align:right; }
 #assetsTable td input[type="checkbox"]{ width:auto; height:18px; }
-.input-sfx{ position:relative; }
-.input-sfx input{ padding-right:28px; }
-.input-sfx::after{
-  content: attr(data-sfx);
-  position:absolute; right:10px; top:50%; transform:translateY(-50%);
-  color:var(--muted); font-size:.9rem; pointer-events:none;
-}
 
-
-.chart-toolbar .btn{ padding:8px 10px; font-weight:600; }
-.chart-toolbar .btn + .btn{ margin-left:6px; }
-
-
+/* toast + spinner */
 .toast{
   position:fixed; right:18px; bottom:18px; background:var(--panel); color:var(--text);
   border:1px solid var(--stroke); padding:10px 14px; border-radius:12px; box-shadow:var(--shadow);
@@ -149,17 +152,29 @@ tbody td+td{border-left:1px solid var(--stroke)}
 }
 .spinner .dot:nth-child(2){animation-delay:.15s} .spinner .dot:nth-child(3){animation-delay:.3s}
 @keyframes bounce{to{transform:translateY(-8px)}}
+
+.topbar{
+  position:sticky; top:0; z-index:30; display:flex; justify-content:flex-end; padding:8px 16px;
+  backdrop-filter:blur(8px); background:linear-gradient(180deg, rgba(0,0,0,.45), transparent);
+}
+.switch{display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:.9rem}
+.switch input{width:auto}
 </style>
 </head>
 <body>
 <header>
+  <div class="topbar">
+    <label class="switch">
+      <input type="checkbox" id="themeToggle"> Tema claro
+    </label>
+  </div>
   <h1>📈 Simulador de Carteiras</h1>
   <p>Escolha ativos no catálogo → ajuste pesos → simule.</p>
 </header>
 
 <div class="container">
   <div class="grid">
-    <!-- ESQUERDA -->
+    <!-- ESQUERDA: CONFIGURAÇÃO -->
     <div class="card">
       <h3>1) Adicionar ativos</h3>
       <p class="small">O catálogo abaixo já traz <b>retorno esperado (a.a. %)</b> e <b>vol 1y (a.a. %)</b> de exemplo. Você pode editar depois de adicionar.</p>
@@ -179,11 +194,17 @@ tbody td+td{border-left:1px solid var(--stroke)}
       <div class="table-wrap">
         <table id="assetsTable" aria-label="Tabela de ativos">
           <colgroup>
-            <col class="usar"><col class="ativo"><col class="ret"><col class="vol"><col class="peso"><col class="acoes">
+            <col class="usar"><col class="ativo"><col class="ret">
+            <col class="vol"><col class="peso"><col class="acoes">
           </colgroup>
           <thead>
             <tr>
-              <th>Usar</th><th>Ativo</th><th>Ret. a.a. (%)</th><th>Vol 1y a.a. (%)</th><th>Peso (%)</th><th>Ações</th>
+              <th>Usar</th>
+              <th>Ativo</th>
+              <th>Ret. a.a. (%)</th>
+              <th>Vol 1y a.a. (%)</th>
+              <th>Peso (%)</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody id="assetsBody"></tbody>
@@ -209,7 +230,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
       <div id="status" class="status" role="status" aria-live="polite"></div>
     </div>
 
-    <!-- DIREITA -->
+    <!-- DIREITA: RESULTADOS -->
     <div class="card">
       <h3>Resultados</h3>
       <div class="metrics">
@@ -220,17 +241,13 @@ tbody td+td{border-left:1px solid var(--stroke)}
         <div class="metric"><div class="label">Sharpe (aprox.)</div><div id="m_sharpe" class="value">—</div></div>
       </div>
 
-      
-      <div style="display:flex;align-items:center;gap:8px;margin-top:14px;margin-bottom:6px">
+      <div style="display:flex;gap:8px;align-items:center;margin-top:14px;margin-bottom:6px">
         <h4 style="margin:0">Caminhos simulados (carteira)</h4>
-        <div class="chart-toolbar" style="margin-left:auto">
-          <button class="btn secondary" id="zoomIn"   type="button">+ Zoom</button>
-          <button class="btn secondary" id="zoomOut"  type="button">− Zoom</button>
-          <button class="btn secondary" id="panLeft"  type="button">←</button>
-          <button class="btn secondary" id="panRight" type="button">→</button>
-          <button class="btn secondary" id="fit"      type="button">Ajustar</button>
-          <button class="btn secondary" id="resetZoomPaths" type="button">Resetar</button>
+        <div class="chips">
+          <span class="chip">zoom: roda/pinça</span>
+          <span class="chip">pan: Shift + arrastar</span>
         </div>
+        <button class="btn secondary" id="resetZoomPaths" type="button" style="margin-left:auto">Resetar zoom</button>
       </div>
       <div class="canvas-wrap">
         <canvas id="chartPaths" height="300" aria-label="Gráfico de caminhos" role="img"></canvas>
@@ -253,7 +270,12 @@ tbody td+td{border-left:1px solid var(--stroke)}
 </div>
 
 <script>
-
+/* ========= Helpers visuais ========= */
+const root = document.documentElement;
+document.getElementById("themeToggle")?.addEventListener("change", (e)=>{
+  if(e.target.checked) root.setAttribute("data-theme","light");
+  else root.removeAttribute("data-theme");
+});
 function toast(msg, ms=2400){
   const el = document.getElementById("toast");
   if(!el) return; el.textContent = msg; el.classList.add("show");
@@ -264,12 +286,12 @@ function spin(on){
   if(!s) return; s.classList.toggle("show", !!on);
 }
 
-
+/* ========= Helpers ========= */
 const $ = (id) => document.getElementById(id);
 const fmtBR = (x) => x.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-/* ===== catálogo de ativos ===== */
+/* ========= Catálogo de ativos (exemplo) ========= */
 const CATALOG = [
   {symbol:"PETR4 (Ação BR)",     exp_return_aa:12.0, vol_1y_aa:35.0},
   {symbol:"VALE3 (Ação BR)",     exp_return_aa:11.0, vol_1y_aa:30.0},
@@ -282,10 +304,10 @@ const CATALOG = [
   {symbol:"Dólar (USD/BRL)",     exp_return_aa:5.0,  vol_1y_aa:18.0},
 ];
 
-/* ===== estado ===== */
+/* ========= Estado da carteira ========= */
 let assets = []; // {enabled, symbol, exp_return_aa, vol_1y_aa, weight}
 
-/* ===== UI catálogo/carteira ===== */
+/* ========= UI: catálogo e carteira ========= */
 function renderCatalog(){
   const select = $("catalogSelect");
   select.innerHTML = "";
@@ -295,57 +317,68 @@ function renderCatalog(){
     opt.textContent = `${a.symbol} — Ret ${a.exp_return_aa}% • Vol ${a.vol_1y_aa}%`;
     select.appendChild(opt);
   });
-  if (select.options.length > 0) select.selectedIndex = 0;
 }
+
 function renderAssets(){
   const tbody = $("assetsBody");
   tbody.innerHTML = "";
   assets.forEach((a,i)=>{
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><input type="checkbox" ${a.enabled?'checked':''} data-i="${i}" data-k="enabled"></td>
-      <td><input value="${a.symbol}" data-i="${i}" data-k="symbol" title="Nome do ativo"></td>
-      <td><div class="input-sfx" data-sfx="%"><input type="number" step="0.1" value="${a.exp_return_aa}" data-i="${i}" data-k="exp_return_aa" title="Retorno esperado anual (%)"></div></td>
-      <td><div class="input-sfx" data-sfx="%"><input type="number" step="0.1" value="${a.vol_1y_aa}" data-i="${i}" data-k="vol_1y_aa" title="Volatilidade 1 ano (anualizada, %)"></div></td>
-      <td><div class="input-sfx" data-sfx="%"><input type="number" step="0.1" min="0" max="100" value="${(a.weight*100).toFixed(1)}" data-i="${i}" data-k="weight" title="Peso da carteira em %"></div></td>
-      <td><button class="iconbtn danger" data-i="${i}" data-action="remove">Remover</button></td>
+      <td>
+        <input type="checkbox" ${a.enabled?'checked':''} data-i="${i}" data-k="enabled">
+      </td>
+      <td>
+        <input type="text" value="${a.symbol}" data-i="${i}" data-k="symbol" title="Nome do ativo">
+      </td>
+      <td>
+        <input type="number" step="0.1" value="${a.exp_return_aa}"
+               data-i="${i}" data-k="exp_return_aa" placeholder="%" title="Retorno a.a. (%)">
+      </td>
+      <td>
+        <input type="number" step="0.1" value="${a.vol_1y_aa}"
+               data-i="${i}" data-k="vol_1y_aa" placeholder="%" title="Volatilidade a.a. (%)">
+      </td>
+      <td>
+        <input type="number" step="0.1" min="0" max="100"
+               value="${(a.weight*100).toFixed(1)}"
+               data-i="${i}" data-k="weight" placeholder="%" title="Peso da carteira (%)">
+      </td>
+      <td>
+        <button class="iconbtn danger" data-i="${i}" data-action="remove">Remover</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
 }
-function addSelectedAsset(){
-  const sel = $("catalogSelect");
-  if (!sel || sel.options.length === 0){ $("status").textContent = "Catálogo vazio."; return; }
-  if (sel.selectedIndex < 0) sel.selectedIndex = 0;
-  const idx = Number.parseInt(sel.value);
-  const safeIdx = Number.isFinite(idx) ? idx : 0;
-  const item = CATALOG[safeIdx];
-  if(!item){ $("status").textContent = "Ativo inválido."; return; }
-  if(assets.some(a => a.symbol === item.symbol)){
-    $("status").textContent = "Esse ativo já está na carteira."; return;
-  }
-  assets.push({ enabled:true, symbol:item.symbol, exp_return_aa:item.exp_return_aa, vol_1y_aa:item.vol_1y_aa, weight: assets.length? 0.0 : 1.0 });
-  normalizeWeights(); renderAssets();
-  $("status").textContent = `Ativo "${item.symbol}" adicionado.`;
-}
-function normalizeWeights(){
-  const enabled = assets.filter(a=>a.enabled);
-  if(enabled.length===0) return;
-  const equal = 1/enabled.length;
-  let sum = enabled.reduce((s,a)=>s+a.weight,0);
-  if(sum <= 1e-9){ assets.forEach(a=>{ if(a.enabled) a.weight = equal; }); }
-  else { assets.forEach(a=>{ if(a.enabled) a.weight = a.weight / sum; }); }
-}
+
+/* editar/remoção */
 $("assetsBody").addEventListener("input", (e)=>{
   const i = +e.target.dataset.i;
   const k = e.target.dataset.k;
   if (i == null || !k) return;
-  if (k === "enabled"){ assets[i].enabled = e.target.checked; normalizeWeights(); renderAssets(); return; }
-  if (k === "symbol"){ assets[i].symbol = e.target.value; return; }
+
+  if (k === "enabled"){
+    assets[i].enabled = e.target.checked;
+    normalizeWeights(); renderAssets();
+    return;
+  }
+  if (k === "symbol"){
+    assets[i].symbol = e.target.value;
+    return;
+  }
+
   const raw = parseFloat(e.target.value);
-  if (k === "weight"){ const pct = isFinite(raw) ? clamp(raw, 0, 100) : 0; assets[i].weight = pct / 100; return; }
-  assets[i][k] = isFinite(raw) ? raw : 0;
+
+  if (k === "weight"){
+    const pct = isFinite(raw) ? clamp(raw, 0, 100) : 0;
+    assets[i].weight = pct / 100;    // UI em %, interno em fração
+    return;
+  }
+
+  assets[i][k] = isFinite(raw) ? raw : 0; // ret/vol continuam em %
 });
+
 $("assetsBody").addEventListener("click", (e)=>{
   const act = e.target.dataset.action;
   if(act==="remove"){
@@ -355,9 +388,41 @@ $("assetsBody").addEventListener("click", (e)=>{
     $("status").textContent = `Ativo "${removed.symbol}" removido.`;
   }
 });
+
 $("addAssetBtn").addEventListener("click", addSelectedAsset);
 
-/* ===== Worker Monte Carlo ===== */
+function addSelectedAsset(){
+  const idx = parseInt($("catalogSelect").value);
+  const item = CATALOG[idx];
+  if(assets.some(a=>a.symbol===item.symbol)){
+    $("status").textContent = "Esse ativo já está na carteira.";
+    return;
+  }
+  assets.push({
+    enabled:true,
+    symbol:item.symbol,
+    exp_return_aa:item.exp_return_aa,
+    vol_1y_aa:item.vol_1y_aa,
+    weight: assets.length? 0.0 : 1.0
+  });
+  normalizeWeights();
+  renderAssets();
+  $("status").textContent = `Ativo "${item.symbol}" adicionado.`;
+}
+
+function normalizeWeights(){
+  const enabled = assets.filter(a=>a.enabled);
+  if(enabled.length===0) return;
+  const sum = enabled.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
+  if(sum <= 1e-9){
+    const equal = 1/enabled.length;
+    assets.forEach(a=>{ if(a.enabled) a.weight = equal; });
+  } else {
+    assets.forEach(a=>{ if(a.enabled) a.weight = a.weight / sum; });
+  }
+}
+
+/* ========= Web Worker (Monte Carlo) ========= */
 const workerCode = `
   const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
   function monthlyRateFromAnnual(pctAA){ return Math.pow(1 + pctAA/100, 1/12) - 1; }
@@ -376,16 +441,23 @@ const workerCode = `
     }
     return L;
   }
+
   onmessage = (e)=>{
     const {assets, years, npaths, rho, rfAA, S0, aport, seed, samplePaths} = e.data;
     const sel = assets.filter(a=>a.enabled);
     const k = sel.length;
     if(k===0){ postMessage({error:"Nenhum ativo selecionado."}); return; }
+
+    // normaliza pesos
     let wsum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
     if(wsum<=0){ wsum = k; sel.forEach(a=>a.weight=1/k); } else sel.forEach(a=>a.weight=a.weight/wsum);
+
+    // parâmetros mensais
     const muM = sel.map(a=>monthlyRateFromAnnual(a.exp_return_aa));
     const sigM = sel.map(a=>monthlyVolFromAnnual(a.vol_1y_aa));
     const w = sel.map(a=>a.weight);
+
+    // covariância + cholesky com jitter
     const C = Array.from({length:k},()=>Array(k).fill(0));
     for(let i=0;i<k;i++)for(let j=0;j<k;j++) C[i][j] = (i===j? sigM[i]*sigM[i] : rho*sigM[i]*sigM[j]);
     let jitter=1e-12; let L=null;
@@ -395,14 +467,17 @@ const workerCode = `
         L = cholesky(Cj); break;
       }catch{ jitter*=10; if(jitter>1e-3){ postMessage({error:"Matriz de covariância inválida."}); return; } }
     }
+
     const months = years*12;
     const rng = LCG(seed);
+
     const keep = Math.min(samplePaths, npaths);
     const xs = Array(months+1).fill(0).map((_,i)=>i);
     const sampled = Array.from({length:keep}, ()=> new Float64Array(months+1));
     for(let j=0;j<keep;j++) sampled[j][0] = S0;
     const finals = new Float64Array(npaths);
     const finalByAsset = new Float64Array(k);
+
     for(let p=0;p<npaths;p++){
       let S = w.map(wi=>S0*wi);
       for(let t=1;t<=months;t++){
@@ -422,6 +497,8 @@ const workerCode = `
       for(let i=0;i<k;i++) finalByAsset[i]+=S[i];
     }
     for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
+
+    // métricas a partir da 1ª trajetória (aproximação)
     const rets = [];
     for(let t=1;t<=months;t++){
       const prev = sampled[0][t-1], cur = sampled[0][t];
@@ -438,106 +515,87 @@ const workerCode = `
     const retAA = Math.pow(1+mean_m,12)-1;
     const volAA = std_m*Math.sqrt(12);
     const sharpe = (retAA - rfAA) / (volAA + 1e-12);
+
     postMessage({ xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: sel });
   };
 `;
 const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
 
-/* ===== Gráficos + zoom por botões ===== */
-let pathsChart=null, histChart=null;
-let view=null, baseRange=null; // janela atual e limites base
+/* ========= Registra plugin de zoom ========= */
+(function ensureZoomPlugin(){
+  function register(){
+    const Zoom =
+     
+      window.ChartZoom ||
+      window['chartjs-plugin-zoom'] ||
+      window.chartjsPluginZoom ||
+      null;
 
+    if (window.Chart && Zoom){
+    
+      if (!Chart.registry.plugins.get('zoom')) {
+        Chart.register(Zoom);
+      }
+     
+    } else {
+      console.warn('chartjs-plugin-zoom não encontrado ainda — tentando novamente…');
+      
+      setTimeout(register, 50);
+    }
+  }
+  // garante rodar após os scripts com defer
+  if (document.readyState === 'complete') register();
+  else window.addEventListener('load', register);
+})();
+
+/* ========= Gráficos ========= */
+let pathsChart=null, histChart=null;
 function drawCharts(xs, sampled, finals){
-  // PATHS
   const ctx1 = $("chartPaths").getContext("2d");
   if(pathsChart) pathsChart.destroy();
 
   const datasets=[];
   for(let j=0;j<sampled.length;j++){
-    datasets.push({ label: j===0 ? "Carteira" : undefined, data: Array.from(sampled[j]), pointRadius:0, borderWidth:1, tension:.12 });
+    datasets.push({
+      label: j===0 ? "Carteira" : undefined,
+      data: Array.from(sampled[j]),
+      pointRadius:0, borderWidth:1, tension:.12
+    });
   }
-
-  // limites base
-  let yMin = Infinity, yMax = -Infinity;
-  for (let j=0;j<sampled.length;j++){
-    const arr = sampled[j];
-    for (let t=0;t<arr.length;t++){
-      const v = arr[t];
-      if (v<yMin) yMin=v;
-      if (v>yMax) yMax=v;
-    }
-  }
-  const padY = (yMax - yMin) * 0.05 || 1;
-  baseRange = { xMin:0, xMax: xs.length-1, yMin: Math.max(0, yMin - padY), yMax: yMax + padY };
-  view = { ...baseRange };
 
   pathsChart = new Chart(ctx1, {
     type:"line",
-    data:{ labels: xs, datasets },
+    data:{labels:xs, datasets},
     options:{
-      plugins:{ legend:{ display:false } },
-      scales:{
-        x:{ title:{ display:true, text:"Mês" }, min: view.xMin, max: view.xMax },
-        y:{ title:{ display:true, text:"Valor (R$)" }, min: view.yMin, max: view.yMax }
-      }
+      plugins:{
+        legend:{display:false},
+        zoom:{
+          zoom:{ wheel:{enabled:true}, pinch:{enabled:true}, drag:{enabled:true}, mode:"xy" },
+          pan:{ enabled:true, mode:"xy", modifierKey:"shift" },
+          limits:{ x:{min:"original",max:"original"}, y:{min:"original",max:"original"} }
+        }
+      },
+      scales:{ x:{title:{display:true,text:"Mês"}}, y:{title:{display:true,text:"Valor (R$)"}} }
     }
   });
 
-  // HIST
   const ctx2 = $("chartHist").getContext("2d");
   if(histChart) histChart.destroy();
   const nbins=30; const min=Math.min(...finals), max=Math.max(...finals);
   const step=(max-min)/nbins || 1; const counts=new Array(nbins).fill(0), centers=[];
   for(let i=0;i<nbins;i++) centers.push((min+(i+0.5)*step).toFixed(0));
   for(const v of finals){ let idx=Math.floor((v-min)/step); if(idx===nbins) idx=nbins-1; counts[idx]++; }
-  histChart = new Chart(ctx2, { type:"bar", data:{labels:centers, datasets:[{label:"Valor final", data:counts}]},
-    options:{ plugins:{legend:{display:false}}, scales:{x:{title:{display:true,text:"Valor final (faixa)"}}, y:{title:{display:true,text:"Frequência"}} } });
+  histChart = new Chart(ctx2, {
+    type:"bar",
+    data:{labels:centers, datasets:[{label:"Valor final", data:counts}]},
+    options:{
+      plugins:{legend:{display:false}},
+      scales:{ x:{title:{display:true,text:"Valor final (faixa)"}}, y:{title:{display:true,text:"Frequência"}} }
+    }
+  });
 }
 
-function applyView(){
-  if(!pathsChart || !view) return;
-  pathsChart.options.scales.x.min = view.xMin;
-  pathsChart.options.scales.x.max = view.xMax;
-  pathsChart.options.scales.y.min = view.yMin;
-  pathsChart.options.scales.y.max = view.yMax;
-  pathsChart.update('none');
-}
-function clampView(){
-  if(!baseRange || !view) return;
-  const xSpan = view.xMax - view.xMin;
-  const ySpan = view.yMax - view.yMin;
-  if (xSpan <= 1) { view.xMin = Math.max(baseRange.xMin, view.xMin - 0.5); view.xMax = Math.min(baseRange.xMax, view.xMax + 0.5); }
-  if (ySpan <= 1e-6) { view.yMin = baseRange.yMin; view.yMax = baseRange.yMax; }
-  if (view.xMin < baseRange.xMin){ view.xMax += (baseRange.xMin - view.xMin); view.xMin = baseRange.xMin; }
-  if (view.xMax > baseRange.xMax){ view.xMin -= (view.xMax - baseRange.xMax); view.xMax = baseRange.xMax; }
-  if (view.yMin < baseRange.yMin){ view.yMin = baseRange.yMin; }
-  if (view.yMax > baseRange.yMax){ view.yMax = baseRange.yMax; }
-}
-function zoomIn(f=0.8){
-  if(!view) return;
-  const cx = (view.xMin + view.xMax)/2, cy = (view.yMin + view.yMax)/2;
-  const xSpan = (view.xMax - view.xMin) * f, ySpan = (view.yMax - view.yMin) * f;
-  view.xMin = cx - xSpan/2; view.xMax = cx + xSpan/2;
-  view.yMin = cy - ySpan/2; view.yMax = cy + ySpan/2;
-  clampView(); applyView();
-}
-function zoomOut(f=0.8){
-  if(!view) return;
-  const cx = (view.xMin + view.xMax)/2, cy = (view.yMin + view.yMax)/2;
-  const xSpan = (view.xMax - view.xMin) / f, ySpan = (view.yMax - view.yMin) / f;
-  view.xMin = cx - xSpan/2; view.xMax = cx + xSpan/2;
-  view.yMin = cy - ySpan/2; view.yMax = cy + ySpan/2;
-  clampView(); applyView();
-}
-function panX(pct=0.2){
-  if(!view) return;
-  const dx = (view.xMax - view.xMin) * pct;
-  view.xMin += dx; view.xMax += dx;
-  clampView(); applyView();
-}
-function fit(){ if(baseRange){ view = { ...baseRange }; applyView(); } }
-
-/* ===== Simulação ===== */
+/* ========= Simulação ========= */
 function captureParams(){
   return {
     years: parseInt($("years").value)||10,
@@ -553,10 +611,17 @@ function runSimulation(fast=false){
   const params = captureParams();
   const sel = assets.filter(a=>a.enabled);
   if(sel.length===0){ $("status").textContent="Selecione/adicione pelo menos um ativo."; return; }
+
+  // normaliza pesos entre habilitados
   let sum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
   if(sum<=0){ sel.forEach(a=>a.weight=1/sel.length); }
   else sel.forEach(a=>a.weight=a.weight/sum);
-  assets = assets.map(a=>{ const f = sel.find(s=>s.symbol===a.symbol); return f ? {...a, weight:f.weight} : a; });
+
+  // aplica pesos normalizados de volta
+  assets = assets.map(a=>{
+    const f = sel.find(s=>s.symbol===a.symbol);
+    return f ? {...a, weight:f.weight} : a;
+  });
 
   $("status").textContent = fast ? "Simulando (rápido)..." : "Simulando em segundo plano...";
   spin(true);
@@ -578,6 +643,7 @@ function runSimulation(fast=false){
     spin(false);
     const t1 = performance.now();
     if(ev.data.error){ $("status").textContent = ev.data.error; toast(ev.data.error); return; }
+
     const { xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: used } = ev.data;
 
     $("m_mean").textContent   = "R$ " + fmtBR(mean);
@@ -601,19 +667,16 @@ function runSimulation(fast=false){
   };
 }
 
-/* ===== Eventos dos botões de zoom/pan ===== */
-$("zoomIn")   ?.addEventListener("click", ()=>zoomIn(0.8));
-$("zoomOut")  ?.addEventListener("click", ()=>zoomOut(0.8));
-$("panLeft")  ?.addEventListener("click", ()=>panX(-0.2));
-$("panRight") ?.addEventListener("click", ()=>panX(+0.2));
-$("fit")      ?.addEventListener("click", fit);
-$("resetZoomPaths")?.addEventListener("click", fit);
+/* ========= Reset zoom ========= */
+document.getElementById("resetZoomPaths")?.addEventListener("click", () => {
+  if (pathsChart && pathsChart.resetZoom) pathsChart.resetZoom();
+});
 
-/* ===== Boot ===== */
+
 renderCatalog();
 assets = [
-  {enabled:true,  symbol:CATALOG[2].symbol, exp_return_aa:CATALOG[2].exp_return_aa, vol_1y_aa:CATALOG[2].vol_1y_aa, weight:0.5},
-  {enabled:true,  symbol:CATALOG[6].symbol, exp_return_aa:CATALOG[6].exp_return_aa, vol_1y_aa:CATALOG[6].vol_1y_aa, weight:0.5},
+  {enabled:true, symbol:CATALOG[2].symbol, exp_return_aa:CATALOG[2].exp_return_aa, vol_1y_aa:CATALOG[2].vol_1y_aa, weight:0.5},
+  {enabled:true, symbol:CATALOG[6].symbol, exp_return_aa:CATALOG[6].exp_return_aa, vol_1y_aa:CATALOG[6].vol_1y_aa, weight:0.5},
 ];
 renderAssets();
 $("runBtn").addEventListener("click", ()=>runSimulation(false));
@@ -621,7 +684,7 @@ $("sampleBtn").addEventListener("click", ()=>runSimulation(true));
 window.addEventListener("load", ()=> setTimeout(()=>runSimulation(true), 250));
 </script>
 
-<!-- toast & spinner -->
+<!-- UI do toast e spinner -->
 <div class="toast" id="toast"></div>
 <div class="spinner" id="spinner">
   <div class="dot"></div><div class="dot"></div><div class="dot"></div>
