@@ -12,7 +12,6 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js" defer></script>
 
 <style>
 :root{
@@ -242,12 +241,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
       </div>
 
       <div style="display:flex;gap:8px;align-items:center;margin-top:14px;margin-bottom:6px">
-        <h4 style="margin:0">Caminhos simulados (carteira)</h4>
-        <div class="chips">
-          <span class="chip">zoom: roda/pinça</span>
-          <span class="chip">pan: Shift + arrastar</span>
-        </div>
-        <button class="btn secondary" id="resetZoomPaths" type="button" style="margin-left:auto">Resetar zoom</button>
+        <h4 style="margin:0">Caminhos simulados (carteira)</h4
       </div>
       <div class="canvas-wrap">
         <canvas id="chartPaths" height="300" aria-label="Gráfico de caminhos" role="img"></canvas>
@@ -521,33 +515,6 @@ const workerCode = `
 `;
 const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
 
-/* ========= Registra plugin de zoom ========= */
-(function ensureZoomPlugin(){
-  function register(){
-    const Zoom =
-     
-      window.ChartZoom ||
-      window['chartjs-plugin-zoom'] ||
-      window.chartjsPluginZoom ||
-      null;
-
-    if (window.Chart && Zoom){
-    
-      if (!Chart.registry.plugins.get('zoom')) {
-        Chart.register(Zoom);
-      }
-     
-    } else {
-      console.warn('chartjs-plugin-zoom não encontrado ainda — tentando novamente…');
-      
-      setTimeout(register, 50);
-    }
-  }
-  // garante rodar após os scripts com defer
-  if (document.readyState === 'complete') register();
-  else window.addEventListener('load', register);
-})();
-
 /* ========= Gráficos ========= */
 let pathsChart=null, histChart=null;
 function drawCharts(xs, sampled, finals){
@@ -569,9 +536,6 @@ function drawCharts(xs, sampled, finals){
     options:{
       plugins:{
         legend:{display:false},
-        zoom:{
-          zoom:{ wheel:{enabled:true}, pinch:{enabled:true}, drag:{enabled:true}, mode:"xy" },
-          pan:{ enabled:true, mode:"xy", modifierKey:"shift" },
           limits:{ x:{min:"original",max:"original"}, y:{min:"original",max:"original"} }
         }
       },
@@ -666,11 +630,6 @@ function runSimulation(fast=false){
     toast("Simulação concluída");
   };
 }
-
-/* ========= Reset zoom ========= */
-document.getElementById("resetZoomPaths")?.addEventListener("click", () => {
-  if (pathsChart && pathsChart.resetZoom) pathsChart.resetZoom();
-});
 
 
 renderCatalog();
