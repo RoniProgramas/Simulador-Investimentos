@@ -12,7 +12,6 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js" defer></script>
 
 <style>
 :root{
@@ -159,6 +158,10 @@ tbody td+td{border-left:1px solid var(--stroke)}
 }
 .switch{display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:.9rem}
 .switch input{width:auto}
+
+.chart-toolbar .btn{ padding:8px 10px; font-weight:600; }
+.chart-toolbar .btn + .btn{ margin-left:6px; }
+  
 </style>
 </head>
 <body>
@@ -242,17 +245,23 @@ tbody td+td{border-left:1px solid var(--stroke)}
       </div>
 
       <div style="display:flex;gap:8px;align-items:center;margin-top:14px;margin-bottom:6px">
-        <h4 style="margin:0">Caminhos simulados (carteira)</h4>
-        <div class="chips">
-          <span class="chip">zoom: roda/pinça</span>
-          <span class="chip">pan: Shift + arrastar</span>
-        </div>
-        <button class="btn secondary" id="resetZoomPaths" type="button" style="margin-left:auto">Resetar zoom</button>
-      </div>
-      <div class="canvas-wrap">
-        <canvas id="chartPaths" height="300" aria-label="Gráfico de caminhos" role="img"></canvas>
-      </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:14px;margin-bottom:6px">
+  <h4 style="margin:0">Caminhos simulados (carteira)</h4>
 
+  <div style="margin-left:auto" class="chart-toolbar">
+    <button class="btn secondary" id="zoomIn" type="button">+ Zoom</button>
+    <button class="btn secondary" id="zoomOut" type="button">− Zoom</button>
+    <button class="btn secondary" id="panLeft" type="button">←</button>
+    <button class="btn secondary" id="panRight" type="button">→</button>
+    <button class="btn secondary" id="fit" type="button">Ajustar</button>
+    <button class="btn secondary" id="resetZoomPaths" type="button">Resetar</button>
+  </div>
+</div>
+
+<div class="canvas-wrap">
+  <canvas id="chartPaths" height="300" aria-label="Gráfico de caminhos" role="img"></canvas>
+</div>
+        
       <h4 style="margin-top:14px">Distribuição do valor final</h4>
       <div class="canvas-wrap">
         <canvas id="chartHist" height="220" aria-label="Histograma do valor final" role="img"></canvas>
@@ -521,39 +530,15 @@ const workerCode = `
 `;
 const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
 
-/* ========= Registra plugin de zoom ========= */
-(function ensureZoomPlugin(){
-  function register(){
-    const Zoom =
-     
-      window.ChartZoom ||
-      window['chartjs-plugin-zoom'] ||
-      window.chartjsPluginZoom ||
-      null;
-
-    if (window.Chart && Zoom){
-    
-      if (!Chart.registry.plugins.get('zoom')) {
-        Chart.register(Zoom);
-      }
-     
-    } else {
-      console.warn('chartjs-plugin-zoom não encontrado ainda — tentando novamente…');
-      
-      setTimeout(register, 50);
-    }
-  }
-  // garante rodar após os scripts com defer
-  if (document.readyState === 'complete') register();
-  else window.addEventListener('load', register);
-})();
-
 /* ========= Gráficos ========= */
 let pathsChart=null, histChart=null;
+let view=null, baseRange=null;
 function drawCharts(xs, sampled, finals){
+  // === PATHS ===
   const ctx1 = $("chartPaths").getContext("2d");
   if(pathsChart) pathsChart.destroy();
 
+  // monta séries
   const datasets=[];
   for(let j=0;j<sampled.length;j++){
     datasets.push({
@@ -563,18 +548,116 @@ function drawCharts(xs, sampled, finals){
     });
   }
 
+
+  let yMin = Infinity, yMax = -Infinity;
+  for (let j=0;j<sampled.length;j++){
+    const arr = sampled[j];
+    for (let t=0;t<arr.length;t++){
+      const v = arr[t];
+      if (v<yMin) yMin=v;
+      if (v>yMax) yMax=v;
+    }
+  }
+  const padY = (yMax - yMin) * 0.05 || 1;
+  baseRange = {
+    xMin: 0,
+    xMax: xs.length - 1,
+    yMin: Math.max(0, yMin - padY),
+    yMax: yMax + padY
+  };
+ 
+  view = { ...baseRange };
+
+  pathsChart = new Chart(ctx1, {
+    type:"line",
+    data:{ labels: xs, datasets },
+    options:{
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ title:{ display:true, text:"Mês" }, min: view.xMin, max: view.xMax },
+        y:{ title:{ display:true, text:"Valor (R$)" }, min: view.yMin, max: view.yMax }
+      }
+    }
+  });
+
+ 
+  const ctx2 = $("chartHist").getContext("2d");
+  if(histChart) histChart.destroy();
+  const nbins=30; const min=Math.min(...finals), max=Math.max(...finals);
+  const step=(max-min)/nbins || 1; const counts=new Array(nbins).fill(0), centers=[];
+  for(let i=0;i<nbins;i++) centers.push((min+(i+0.5)*step).toFixed(0));
+  for(const v of finals){ let idx=Math.floor((v-min)/step); if(idx===nbins) idx=nbins-1; counts[idx]++; }
+  histChart = new Chart(ctx2, {
+    type:"bar",
+    data:{ labels:centers, datasets:[{ label:"Valor final", data:counts }]},
+    options:{
+      plugins:{ legend:{ display:false }},
+      scales:{ x:{ title:{ display:true, text:"Valor final (faixa)" }}, y:{ title:{ display:true, text:"Frequência" }} }
+    }
+  });
+}
+  function applyView(){
+  if(!pathsChart || !view) return;
+  pathsChart.options.scales.x.min = view.xMin;
+  pathsChart.options.scales.x.max = view.xMax;
+  pathsChart.options.scales.y.min = view.yMin;
+  pathsChart.options.scales.y.max = view.yMax;
+  pathsChart.update('none');
+}
+function clampView(){
+  const xSpan = view.xMax - view.xMin;
+  const ySpan = view.yMax - view.yMin;
+  if (xSpan <= 1) { view.xMin = Math.max(baseRange.xMin, view.xMin - 0.5); view.xMax = Math.min(baseRange.xMax, view.xMax + 0.5); }
+  if (ySpan <= 1e-6) { view.yMin = baseRange.yMin; view.yMax = baseRange.yMax; }
+
+  if (view.xMin < baseRange.xMin){ view.xMax += (baseRange.xMin - view.xMin); view.xMin = baseRange.xMin; }
+  if (view.xMax > baseRange.xMax){ view.xMin -= (view.xMax - baseRange.xMax); view.xMax = baseRange.xMax; }
+  if (view.yMin < baseRange.yMin){ view.yMin = baseRange.yMin; }
+  if (view.yMax > baseRange.yMax){ view.yMax = baseRange.yMax; }
+}
+function zoomIn(f=0.8){
+  if(!view) return;
+  const cx = (view.xMin + view.xMax)/2;
+  const cy = (view.yMin + view.yMax)/2;
+  const xSpan = (view.xMax - view.xMin) * f;
+  const ySpan = (view.yMax - view.yMin) * f;
+  view.xMin = cx - xSpan/2; view.xMax = cx + xSpan/2;
+  view.yMin = cy - ySpan/2; view.yMax = cy + ySpan/2;
+  clampView(); applyView();
+}
+function zoomOut(f=0.8){
+  if(!view) return;
+  const cx = (view.xMin + view.xMax)/2;
+  const cy = (view.yMin + view.yMax)/2;
+  const xSpan = (view.xMax - view.xMin) / f;
+  const ySpan = (view.yMax - view.yMin) / f;
+  view.xMin = cx - xSpan/2; view.xMax = cx + xSpan/2;
+  view.yMin = cy - ySpan/2; view.yMax = cy + ySpan/2;
+  clampView(); applyView();
+}
+function panX(pct=0.2){ 
+  if(!view) return;
+  const dx = (view.xMax - view.xMin) * pct;
+  view.xMin += dx; view.xMax += dx;
+  clampView(); applyView();
+}
+function fit(){ if(baseRange){ view = { ...baseRange }; applyView(); } }
+
+// botões
+$("zoomIn")   ?.addEventListener("click", ()=>zoomIn(0.8));
+$("zoomOut")  ?.addEventListener("click", ()=>zoomOut(0.8));
+$("panLeft")  ?.addEventListener("click", ()=>panX(-0.2));
+$("panRight") ?.addEventListener("click", ()=>panX(+0.2));
+$("fit")      ?.addEventListener("click", fit);
+$("resetZoomPaths")?.addEventListener("click", fit);
+
+
   pathsChart = new Chart(ctx1, {
     type:"line",
     data:{labels:xs, datasets},
     options:{
       plugins:{
         legend:{display:false},
-        zoom:{
-          zoom:{ wheel:{enabled:true}, pinch:{enabled:true}, drag:{enabled:true}, mode:"xy" },
-          pan:{ enabled:true, mode:"xy", modifierKey:"shift" },
-          limits:{ x:{min:"original",max:"original"}, y:{min:"original",max:"original"} }
-        }
-      },
       scales:{ x:{title:{display:true,text:"Mês"}}, y:{title:{display:true,text:"Valor (R$)"}} }
     }
   });
