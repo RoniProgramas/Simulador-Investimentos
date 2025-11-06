@@ -80,7 +80,6 @@ tbody td+td{border-left:1px solid var(--stroke)}
 .btn:hover{box-shadow:0 6px 18px rgba(0,200,83,.25)}
 .btn:active{transform:translateY(1px)}
 .btn.secondary{background:transparent; color:var(--text); border:1px solid var(--stroke)}
-
 .iconbtn{background:#11254b; border:1px solid #2a4275; color:#e7eeff; border-radius:8px; padding:6px 10px; cursor:pointer}
 .iconbtn.danger{background:#4b1120; border-color:#7a2840}
 
@@ -106,6 +105,28 @@ tbody td+td{border-left:1px solid var(--stroke)}
 .actions{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0}
 .status{margin-top:8px; color:var(--muted); font-size:.9rem; min-height:1.4em}
 
+/* ====== TABELA: visualização nítida ====== */
+.table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+#assetsTable{ min-width:920px; table-layout:fixed; }
+#assetsTable col.usar  { width:72px; }
+#assetsTable col.ativo { width:320px; }
+#assetsTable col.ret   { width:160px; }
+#assetsTable col.vol   { width:160px; }
+#assetsTable col.peso  { width:140px; }
+#assetsTable col.acoes { width:120px; }
+
+#assetsTable td input[type="text"],
+#assetsTable td input[type="number"]{
+  width:100%; min-width:90px;
+  height:44px; padding:10px 12px;
+  font-size:1rem; font-variant-numeric:tabular-nums;
+  background:var(--panel); color:var(--text);
+  border-radius:12px; caret-color:var(--text);
+  text-overflow:clip;
+}
+#assetsTable td input[type="number"]{ text-align:right; }
+#assetsTable td input[type="checkbox"]{ width:auto; height:18px; }
+
 /* toast + spinner */
 .toast{
   position:fixed; right:18px; bottom:18px; background:var(--panel); color:var(--text);
@@ -130,84 +151,6 @@ tbody td+td{border-left:1px solid var(--stroke)}
 }
 .switch{display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:.9rem}
 .switch input{width:auto}
-
-#assetsTable{ table-layout: fixed; } 
-#assetsTable col.usar {width: 64px; }
-#assetsTable col.ativo { width: 34%; }
-#assetsTable col.ret   { width: 16%; }
-#assetsTable col.vol   { width: 16%; }
-#assetsTable col.peso  { width: 14%; }
-#assetsTable col.acoes { width: 120px; }
-
-  #assetsTable td input[type="text"],
-#assetsTable td input[type="number"]{
-  width: 100%;
-  display: block;
-  font-size: 0.98rem;
-  padding: 10px 12px;
-  height: 42px;              
-  border-radius: 12px;
-
-  #assetsTable td input[type="checkbox"]{
-  width: auto; height: 18px;
-}
-  .input-sfx{ position: relative; }
-.input-sfx input{ padding-right: 28px; }
-.input-sfx::after{
-  content: attr(data-sfx);
-  position: absolute; right: 10px; top: 50%;
-  transform: translateY(-50%);
-  color: var(--muted); font-size: .9rem; pointer-events: none;
-}
-
-
-.table-wrap{
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-#assetsTable{
-  min-width: 920px;    
-  table-layout: fixed;      
-}
-
-#assetsTable col.usar  { width: 72px; }
-#assetsTable col.ativo { width: 320px; }
-#assetsTable col.ret   { width: 140px; }
-#assetsTable col.vol   { width: 140px; }
-#assetsTable col.peso  { width: 120px; }
-#assetsTable col.acoes { width: 120px; }
-
-#assetsTable td input[type="text"],
-#assetsTable td input[type="number"]{
-  width: 100%;
-  display: block;
-  font-size: 1rem;
-  padding: 10px 12px;
-  height: 42px;
-  border-radius: 12px;
-  background: var(--panel);
-  color: var(--text);
-  caret-color: var(--text);
-  text-overflow: clip;
-}
-
-#assetsTable td input[type="number"]{
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-#assetsTable td input[type="checkbox"]{ width: auto; height: 18px; }
-
-.input-sfx{ position: relative; }
-.input-sfx input{ padding-right: 28px; }
-.input-sfx::after{
-  content: attr(data-sfx);
-  position: absolute; right: 10px; top: 50%;
-  transform: translateY(-50%);
-  color: var(--muted); font-size: .9rem; pointer-events: none;
-}
-  
 </style>
 </head>
 <body>
@@ -237,33 +180,28 @@ tbody td+td{border-left:1px solid var(--stroke)}
         </div>
       </div>
 
-<h3 style="margin-top:16px">2) Sua carteira</h3>
-<p class="small">Marque “Usar” para incluir na simulação. Pesos são normalizados automaticamente.</p>
+      <h3 style="margin-top:16px">2) Sua carteira</h3>
+      <p class="small">Marque “Usar” para incluir na simulação. Pesos são normalizados automaticamente.</p>
 
-<div class="table-wrap">
-  <table id="assetsTable" aria-label="Tabela de ativos">
-    <colgroup>
-      <col class="usar">
-      <col class="ativo">
-      <col class="ret">
-      <col class="vol">
-      <col class="peso">
-      <col class="acoes">
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Usar</th>
-        <th>Ativo</th>
-        <th>Ret. a.a. (%)</th>
-        <th>Vol 1y a.a. (%)</th>
-        <th>Peso (%)</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody id="assetsBody"></tbody>
-  </table>
-</div>
-
+      <div class="table-wrap">
+        <table id="assetsTable" aria-label="Tabela de ativos">
+          <colgroup>
+            <col class="usar"><col class="ativo"><col class="ret">
+            <col class="vol"><col class="peso"><col class="acoes">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Usar</th>
+              <th>Ativo</th>
+              <th>Ret. a.a. (%)</th>
+              <th>Vol 1y a.a. (%)</th>
+              <th>Peso (%)</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="assetsBody"></tbody>
+        </table>
+      </div>
 
       <h3 style="margin-top:16px">3) Parâmetros</h3>
       <div class="row">
@@ -295,7 +233,6 @@ tbody td+td{border-left:1px solid var(--stroke)}
         <div class="metric"><div class="label">Sharpe (aprox.)</div><div id="m_sharpe" class="value">—</div></div>
       </div>
 
-      <!-- Título + chips + botão reset -->
       <div style="display:flex;gap:8px;align-items:center;margin-top:14px;margin-bottom:6px">
         <h4 style="margin:0">Caminhos simulados (carteira)</h4>
         <div class="chips">
@@ -373,6 +310,7 @@ function renderCatalog(){
     select.appendChild(opt);
   });
 }
+
 function renderAssets(){
   const tbody = $("assetsBody");
   tbody.innerHTML = "";
@@ -383,25 +321,20 @@ function renderAssets(){
         <input type="checkbox" ${a.enabled?'checked':''} data-i="${i}" data-k="enabled">
       </td>
       <td>
-        <input value="${a.symbol}" data-i="${i}" data-k="symbol" title="Nome do ativo">
+        <input type="text" value="${a.symbol}" data-i="${i}" data-k="symbol" title="Nome do ativo">
       </td>
       <td>
-        <div class="input-sfx" data-sfx="%">
-          <input type="number" step="0.1" value="${a.exp_return_aa}" data-i="${i}" data-k="exp_return_aa" title="Retorno esperado anual (%)">
-        </div>
+        <input type="number" step="0.1" value="${a.exp_return_aa}"
+               data-i="${i}" data-k="exp_return_aa" placeholder="%" title="Retorno a.a. (%)">
       </td>
       <td>
-        <div class="input-sfx" data-sfx="%">
-          <input type="number" step="0.1" value="${a.vol_1y_aa}" data-i="${i}" data-k="vol_1y_aa" title="Volatilidade 1 ano (anualizada, %)">
-        </div>
+        <input type="number" step="0.1" value="${a.vol_1y_aa}"
+               data-i="${i}" data-k="vol_1y_aa" placeholder="%" title="Volatilidade a.a. (%)">
       </td>
       <td>
-        <div class="input-sfx" data-sfx="%">
-          <input type="number" step="0.1" min="0" max="100"
-                 value="${(a.weight*100).toFixed(1)}"
-                 data-i="${i}" data-k="weight"
-                 title="Peso da carteira em %">
-        </div>
+        <input type="number" step="0.1" min="0" max="100"
+               value="${(a.weight*100).toFixed(1)}"
+               data-i="${i}" data-k="weight" placeholder="%" title="Peso da carteira (%)">
       </td>
       <td>
         <button class="iconbtn danger" data-i="${i}" data-action="remove">Remover</button>
@@ -410,6 +343,46 @@ function renderAssets(){
     tbody.appendChild(tr);
   });
 }
+
+/* editar/remoção */
+$("assetsBody").addEventListener("input", (e)=>{
+  const i = +e.target.dataset.i;
+  const k = e.target.dataset.k;
+  if (i == null || !k) return;
+
+  if (k === "enabled"){
+    assets[i].enabled = e.target.checked;
+    normalizeWeights(); renderAssets();
+    return;
+  }
+  if (k === "symbol"){
+    assets[i].symbol = e.target.value;
+    return;
+  }
+
+  const raw = parseFloat(e.target.value);
+
+  if (k === "weight"){
+    const pct = isFinite(raw) ? clamp(raw, 0, 100) : 0;
+    assets[i].weight = pct / 100;    // UI em %, interno em fração
+    return;
+  }
+
+  assets[i][k] = isFinite(raw) ? raw : 0; // ret/vol continuam em %
+});
+
+$("assetsBody").addEventListener("click", (e)=>{
+  const act = e.target.dataset.action;
+  if(act==="remove"){
+    const i = +e.target.dataset.i;
+    const removed = assets.splice(i,1)[0];
+    normalizeWeights(); renderAssets();
+    $("status").textContent = `Ativo "${removed.symbol}" removido.`;
+  }
+});
+
+$("addAssetBtn").addEventListener("click", addSelectedAsset);
+
 function addSelectedAsset(){
   const idx = parseInt($("catalogSelect").value);
   const item = CATALOG[idx];
@@ -428,55 +401,18 @@ function addSelectedAsset(){
   renderAssets();
   $("status").textContent = `Ativo "${item.symbol}" adicionado.`;
 }
+
 function normalizeWeights(){
   const enabled = assets.filter(a=>a.enabled);
   if(enabled.length===0) return;
-  const equal = 1/enabled.length;
-  let sum = enabled.reduce((s,a)=>s+a.weight,0);
+  const sum = enabled.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
   if(sum <= 1e-9){
+    const equal = 1/enabled.length;
     assets.forEach(a=>{ if(a.enabled) a.weight = equal; });
   } else {
     assets.forEach(a=>{ if(a.enabled) a.weight = a.weight / sum; });
   }
 }
-
-$("assetsBody").addEventListener("input", (e)=>{
-  const i = +e.target.dataset.i;
-  const k = e.target.dataset.k;
-  if (i == null || !k) return;
-  
-  if (k === "enabled"){
-    assets[i].enabled = e.target.checked;
-    normalizeWeights(); 
-    renderAssets();
-    return;
-  }
-
-  if (k === "symbol"){
-    assets[i].symbol = e.target.value;
-    return;
-  }
-
-  const raw = parseFloat(e.target.value);
-
-  if (k === "weight"){
-    const pct = isFinite(raw) ? clamp(raw, 0, 100) : 0;
-    assets[i].weight = pct / 100;
-    return;
-  }
-  
-  assets[i][k] = isFinite(raw) ? raw : 0;
-});
-$("assetsBody").addEventListener("click", (e)=>{
-  const act = e.target.dataset.action;
-  if(act==="remove"){
-    const i = +e.target.dataset.i;
-    const removed = assets.splice(i,1)[0];
-    normalizeWeights(); renderAssets();
-    $("status").textContent = `Ativo "${removed.symbol}" removido.`;
-  }
-});
-$("addAssetBtn").addEventListener("click", addSelectedAsset);
 
 /* ========= Web Worker (Monte Carlo) ========= */
 const workerCode = `
@@ -497,16 +433,23 @@ const workerCode = `
     }
     return L;
   }
+
   onmessage = (e)=>{
     const {assets, years, npaths, rho, rfAA, S0, aport, seed, samplePaths} = e.data;
     const sel = assets.filter(a=>a.enabled);
     const k = sel.length;
     if(k===0){ postMessage({error:"Nenhum ativo selecionado."}); return; }
+
+    // normaliza pesos
     let wsum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
     if(wsum<=0){ wsum = k; sel.forEach(a=>a.weight=1/k); } else sel.forEach(a=>a.weight=a.weight/wsum);
+
+    // parâmetros mensais
     const muM = sel.map(a=>monthlyRateFromAnnual(a.exp_return_aa));
     const sigM = sel.map(a=>monthlyVolFromAnnual(a.vol_1y_aa));
     const w = sel.map(a=>a.weight);
+
+    // covariância + cholesky com jitter
     const C = Array.from({length:k},()=>Array(k).fill(0));
     for(let i=0;i<k;i++)for(let j=0;j<k;j++) C[i][j] = (i===j? sigM[i]*sigM[i] : rho*sigM[i]*sigM[j]);
     let jitter=1e-12; let L=null;
@@ -516,14 +459,17 @@ const workerCode = `
         L = cholesky(Cj); break;
       }catch{ jitter*=10; if(jitter>1e-3){ postMessage({error:"Matriz de covariância inválida."}); return; } }
     }
+
     const months = years*12;
     const rng = LCG(seed);
+
     const keep = Math.min(samplePaths, npaths);
     const xs = Array(months+1).fill(0).map((_,i)=>i);
     const sampled = Array.from({length:keep}, ()=> new Float64Array(months+1));
     for(let j=0;j<keep;j++) sampled[j][0] = S0;
     const finals = new Float64Array(npaths);
     const finalByAsset = new Float64Array(k);
+
     for(let p=0;p<npaths;p++){
       let S = w.map(wi=>S0*wi);
       for(let t=1;t<=months;t++){
@@ -543,6 +489,8 @@ const workerCode = `
       for(let i=0;i<k;i++) finalByAsset[i]+=S[i];
     }
     for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
+
+    // métricas a partir da 1ª trajetória (aproximação)
     const rets = [];
     for(let t=1;t<=months;t++){
       const prev = sampled[0][t-1], cur = sampled[0][t];
@@ -559,6 +507,7 @@ const workerCode = `
     const retAA = Math.pow(1+mean_m,12)-1;
     const volAA = std_m*Math.sqrt(12);
     const sharpe = (retAA - rfAA) / (volAA + 1e-12);
+
     postMessage({ xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: sel });
   };
 `;
@@ -636,16 +585,17 @@ function runSimulation(fast=false){
   const sel = assets.filter(a=>a.enabled);
   if(sel.length===0){ $("status").textContent="Selecione/adicione pelo menos um ativo."; return; }
 
+  // normaliza pesos entre habilitados
   let sum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
   if(sum<=0){ sel.forEach(a=>a.weight=1/sel.length); }
   else sel.forEach(a=>a.weight=a.weight/sum);
 
+  // aplica pesos normalizados de volta
   assets = assets.map(a=>{
     const f = sel.find(s=>s.symbol===a.symbol);
     return f ? {...a, weight:f.weight} : a;
   });
 
-  // status + spinner
   $("status").textContent = fast ? "Simulando (rápido)..." : "Simulando em segundo plano...";
   spin(true);
   const t0 = performance.now();
@@ -695,11 +645,12 @@ document.getElementById("resetZoomPaths")?.addEventListener("click", () => {
   if (pathsChart && pathsChart.resetZoom) pathsChart.resetZoom();
 });
 
-/* ========= Boot ========= */
+
+function addSelectedAsset(){ /* já definida acima */ } // (declarada antes)
 renderCatalog();
 assets = [
-  {enabled:true,  symbol:CATALOG[2].symbol, exp_return_aa:CATALOG[2].exp_return_aa, vol_1y_aa:CATALOG[2].vol_1y_aa, weight:0.5},
-  {enabled:true,  symbol:CATALOG[6].symbol, exp_return_aa:CATALOG[6].exp_return_aa, vol_1y_aa:CATALOG[6].vol_1y_aa, weight:0.5},
+  {enabled:true, symbol:CATALOG[2].symbol, exp_return_aa:CATALOG[2].exp_return_aa, vol_1y_aa:CATALOG[2].vol_1y_aa, weight:0.5},
+  {enabled:true, symbol:CATALOG[6].symbol, exp_return_aa:CATALOG[6].exp_return_aa, vol_1y_aa:CATALOG[6].vol_1y_aa, weight:0.5},
 ];
 renderAssets();
 $("runBtn").addEventListener("click", ()=>runSimulation(false));
