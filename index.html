@@ -553,7 +553,7 @@ function drawCharts(xs, sampled, finals){
   for(const v of finals){ let idx=Math.floor((v-min)/step); if(idx===nbins) idx=nbins-1; counts[idx]++; }
   histChart = new Chart(ctx2, {
     type:"bar",
-    data:{labels:centers, datasets:[{label:"Valor final", data:counts}]},
+    data:{labels:centers, datasets:[{label:"Valor final (após IR)", data:counts}]},
     options:{
       plugins:{legend:{display:false}},
       scales:{ x:{title:{display:true,text:"Valor final (faixa)"}}, y:{title:{display:true,text:"Frequência"}} }
