@@ -241,7 +241,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
       </div>
 
       <div style="display:flex;gap:8px;align-items:center;margin-top:14px;margin-bottom:6px">
-        <h4 style="margin:0">Caminhos simulados (carteira)</h4
+        <h4 style="margin:0">Caminhos simulados (carteira)</h4>
       </div>
       <div class="canvas-wrap">
         <canvas id="chartPaths" height="300" aria-label="Gráfico de caminhos" role="img"></canvas>
@@ -531,17 +531,18 @@ function drawCharts(xs, sampled, finals){
   }
 
   pathsChart = new Chart(ctx1, {
-    type:"line",
-    data:{labels:xs, datasets},
-    options:{
-      plugins:{
-        legend:{display:false},
-          limits:{ x:{min:"original",max:"original"}, y:{min:"original",max:"original"} }
-        }
-      },
-      scales:{ x:{title:{display:true,text:"Mês"}}, y:{title:{display:true,text:"Valor (R$)"}} }
+  type: "line",
+  data: { labels: xs, datasets },
+  options: {
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      x: { title: { display: true, text: "Mês" } },
+      y: { title: { display: true, text: "Valor (R$)" } }
     }
-  });
+  }
+});
 
   const ctx2 = $("chartHist").getContext("2d");
   if(histChart) histChart.destroy();
