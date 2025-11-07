@@ -665,13 +665,6 @@ function runSimulation(fast=false){
   toast("Simulação concluída (após IR)");
 };
 
-    drawCharts(xs, sampled, finals);
-    $("status").textContent = `Pronto em ${(t1 - t0).toFixed(0)} ms (${finals.length} caminhos).`;
-    toast("Simulação concluída");
-  };
-}
-
-
 renderCatalog();
 assets = [
   {enabled:true, symbol:CATALOG[2].symbol, exp_return_aa:CATALOG[2].exp_return_aa, vol_1y_aa:CATALOG[2].vol_1y_aa, weight:0.5},
