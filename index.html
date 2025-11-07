@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#0b132b">
 
-<!-- Chart.js -->
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 
 <style>
@@ -38,10 +38,15 @@ header p{margin:.5rem auto 0; color:var(--muted); max-width:920px}
 
 .container{max-width:1360px; margin:18px auto; padding:0 16px}
 .grid{
-  display:grid; grid-template-columns: 1fr 1fr; gap:16px;
+  display:grid;
+  grid-template-columns: 50% 50%;
+  gap:16px;
 }
 .grid > .card{ min-width:0; }
-@media (max-width:1100px){ .grid{ grid-template-columns:1fr; } }
+
+@media (max-width:1100px){
+  .grid{ grid-template-columns:1fr; }
+}
 
 .card{
   background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
@@ -85,6 +90,12 @@ tbody td+td{border-left:1px solid var(--stroke)}
 .iconbtn{background:#11254b; border:1px solid #2a4275; color:#e7eeff; border-radius:8px; padding:6px 10px; cursor:pointer}
 .iconbtn.danger{background:#4b1120; border-color:#7a2840}
 
+.chips{display:flex; gap:8px; flex-wrap:wrap}
+.chip{
+  background:var(--panel); border:1px solid var(--stroke); color:var(--muted);
+  padding:6px 10px; border-radius:999px; font-size:.85rem;
+}
+
 .canvas-wrap{
   background:var(--panel); border:1px solid var(--stroke); border-radius:14px; padding:8px;
   box-shadow:var(--shadow);
@@ -92,10 +103,13 @@ tbody td+td{border-left:1px solid var(--stroke)}
 
 .metrics{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-top:10px}
 @media (max-width:1024px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.metric{ background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px; text-align:center }
+.metric{
+  background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px; text-align:center
+}
 .metric .label{color:var(--muted); font-size:.8rem}
 .metric .value{font-size:1.06rem; font-weight:700; margin-top:4px}
 
+.actions{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0}
 .status{margin-top:8px; color:var(--muted); font-size:.9rem; min-height:1.4em}
 
 /* ====== TABELA: visualização nítida ====== */
@@ -208,15 +222,11 @@ tbody td+td{border-left:1px solid var(--stroke)}
         <div><label>Valor inicial (R$)</label><input id="S0" type="number" value="10000" step="100"></div>
         <div><label>Aporte mensal (R$)</label><input id="aport" type="number" value="0" step="50"></div>
         <div><label>IR sobre lucro (%)</label><input id="ir" type="number" value="0" step="0.5" min="0" max="30"></div>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <div style="grid-column: span 4; display:flex; align-items:flex-end; gap:8px">
+        <div style="display:flex;align-items:flex-end;gap:8px">
           <button class="btn" id="runBtn">Simular</button>
           <button class="btn secondary" id="sampleBtn">Simular (rápido)</button>
         </div>
       </div>
-
       <div id="status" class="status" role="status" aria-live="polite"></div>
     </div>
 
@@ -282,11 +292,11 @@ const CATALOG = [
   {symbol:"VALE3 (Ação BR)",     exp_return_aa:11.0, vol_1y_aa:30.0},
   {symbol:"BOVA11 (Ibovespa)",   exp_return_aa:10.0, vol_1y_aa:22.0},
   {symbol:"IVVB11 (S&P500 BRL)", exp_return_aa:9.0,  vol_1y_aa:18.0},
-  {symbol:"KNCR11 (Kinea)",      exp_return_aa:14.0, vol_1y_aa:9.5},
-  {symbol:"Bitcoin",             exp_return_aa:30.0, vol_1y_aa:80.0},
-  {symbol:"Tesouro Selic",       exp_return_aa:12.0, vol_1y_aa:3.5},
-  {symbol:"Tesouro IPCA+7",      exp_return_aa:10.6, vol_1y_aa:6.0},
-  {symbol:"Dólar (USD/BRL)",     exp_return_aa:5.0,  vol_1y_aa:18.0}
+  {symbol:"KNCR11 (Kinea)", exp_return_aa:14.0,  vol_1y_aa:9.5},
+  {symbol:"Bitcoin",  exp_return_aa:30.0, vol_1y_aa:80.0},
+  {symbol:"Tesouro Selic",       exp_return_aa:12.0,  vol_1y_aa:3.5},
+  {symbol:"Tesouro IPCA+7",       exp_return_aa:10.6,  vol_1y_aa:6.0},
+  {symbol:"Dólar (USD/BRL)",     exp_return_aa:5.0,  vol_1y_aa:18.0},
 ];
 
 /* ========= Estado da carteira ========= */
@@ -310,18 +320,34 @@ function renderAssets(){
   assets.forEach((a,i)=>{
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><input type="checkbox" ${a.enabled?'checked':''} data-i="${i}" data-k="enabled"></td>
-      <td><input type="text" value="${a.symbol}" data-i="${i}" data-k="symbol" title="Nome do ativo"></td>
-      <td><input type="number" step="0.1" value="${a.exp_return_aa}" data-i="${i}" data-k="exp_return_aa" placeholder="%" title="Retorno a.a. (%)"></td>
-      <td><input type="number" step="0.1" value="${a.vol_1y_aa}" data-i="${i}" data-k="vol_1y_aa" placeholder="%" title="Volatilidade a.a. (%)"></td>
-      <td><input type="number" step="0.1" min="0" max="100" value="${(a.weight*100).toFixed(1)}" data-i="${i}" data-k="weight" placeholder="%" title="Peso da carteira (%)"></td>
-      <td><button class="iconbtn danger" data-i="${i}" data-action="remove">Remover</button></td>
+      <td>
+        <input type="checkbox" ${a.enabled?'checked':''} data-i="${i}" data-k="enabled">
+      </td>
+      <td>
+        <input type="text" value="${a.symbol}" data-i="${i}" data-k="symbol" title="Nome do ativo">
+      </td>
+      <td>
+        <input type="number" step="0.1" value="${a.exp_return_aa}"
+               data-i="${i}" data-k="exp_return_aa" placeholder="%" title="Retorno a.a. (%)">
+      </td>
+      <td>
+        <input type="number" step="0.1" value="${a.vol_1y_aa}"
+               data-i="${i}" data-k="vol_1y_aa" placeholder="%" title="Volatilidade a.a. (%)">
+      </td>
+      <td>
+        <input type="number" step="0.1" min="0" max="100"
+               value="${(a.weight*100).toFixed(1)}"
+               data-i="${i}" data-k="weight" placeholder="%" title="Peso da carteira (%)">
+      </td>
+      <td>
+        <button class="iconbtn danger" data-i="${i}" data-action="remove">Remover</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-/* eventos de edição/remoção */
+/* editar/remoção */
 $("assetsBody").addEventListener("input", (e)=>{
   const i = +e.target.dataset.i;
   const k = e.target.dataset.k;
@@ -338,13 +364,16 @@ $("assetsBody").addEventListener("input", (e)=>{
   }
 
   const raw = parseFloat(e.target.value);
+
   if (k === "weight"){
     const pct = isFinite(raw) ? clamp(raw, 0, 100) : 0;
-    assets[i].weight = pct / 100; // UI em %, interno fração
+    assets[i].weight = pct / 100;    // UI em %, interno em fração
     return;
   }
-  assets[i][k] = isFinite(raw) ? raw : 0; // ret/vol em %
+
+  assets[i][k] = isFinite(raw) ? raw : 0; // ret/vol continuam em %
 });
+
 $("assetsBody").addEventListener("click", (e)=>{
   const act = e.target.dataset.action;
   if(act==="remove"){
@@ -354,7 +383,9 @@ $("assetsBody").addEventListener("click", (e)=>{
     $("status").textContent = `Ativo "${removed.symbol}" removido.`;
   }
 });
+
 $("addAssetBtn").addEventListener("click", addSelectedAsset);
+
 function addSelectedAsset(){
   const idx = parseInt($("catalogSelect").value);
   const item = CATALOG[idx];
@@ -373,6 +404,7 @@ function addSelectedAsset(){
   renderAssets();
   $("status").textContent = `Ativo "${item.symbol}" adicionado.`;
 }
+
 function normalizeWeights(){
   const enabled = assets.filter(a=>a.enabled);
   if(enabled.length===0) return;
@@ -387,6 +419,7 @@ function normalizeWeights(){
 
 /* ========= Web Worker (Monte Carlo) ========= */
 const workerCode = `
+  const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
   function monthlyRateFromAnnual(pctAA){ return Math.pow(1 + pctAA/100, 1/12) - 1; }
   function monthlyVolFromAnnual(pctAA){ return (pctAA/100)/Math.sqrt(12); }
   function LCG(seed=12345){ let s = seed>>>0; return ()=>{ s = (1664525*s + 1013904223) >>> 0; return s / 4294967296; }; }
@@ -403,6 +436,7 @@ const workerCode = `
     }
     return L;
   }
+
   onmessage = (e)=>{
     const {assets, years, npaths, rho, rfAA, S0, aport, seed, samplePaths} = e.data;
     const sel = assets.filter(a=>a.enabled);
@@ -443,7 +477,7 @@ const workerCode = `
       let S = w.map(wi=>S0*wi);
       for(let t=1;t<=months;t++){
         const u = Array.from({length:k},()=>randn(rng));
-        const z = C.map((row,i)=> row.reduce((s,v,idx)=> s + (i===idx? v*u[idx] : 0), 0)); // aproximando via diag(L) para robustez
+        const z = L.map(row=>row.reduce((s,v,idx)=>s+v*u[idx],0));
         for(let i=0;i<k;i++){
           const growth = Math.exp((muM[i] - 0.5*sigM[i]*sigM[i]) + sigM[i]*z[i]);
           S[i] *= growth;
@@ -459,7 +493,7 @@ const workerCode = `
     }
     for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
 
-    // métricas aproximadas a partir da 1ª trajetória
+    // métricas a partir da 1ª trajetória (aproximação)
     const rets = [];
     for(let t=1;t<=months;t++){
       const prev = sampled[0][t-1], cur = sampled[0][t];
@@ -498,13 +532,18 @@ function drawCharts(xs, sampled, finals){
   }
 
   pathsChart = new Chart(ctx1, {
-    type:"line",
-    data:{labels:xs, datasets},
-    options:{
-      plugins:{ legend:{display:false} },
-      scales:{ x:{title:{display:true,text:"Mês"}}, y:{title:{display:true,text:"Valor (R$)"}} }
+  type: "line",
+  data: { labels: xs, datasets },
+  options: {
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      x: { title: { display: true, text: "Mês" } },
+      y: { title: { display: true, text: "Valor (R$)" } }
     }
-  });
+  }
+});
 
   const ctx2 = $("chartHist").getContext("2d");
   if(histChart) histChart.destroy();
@@ -540,12 +579,11 @@ function runSimulation(fast=false){
   const sel = assets.filter(a=>a.enabled);
   if(sel.length===0){ $("status").textContent="Selecione/adicione pelo menos um ativo."; return; }
 
-  // normaliza pesos
+  
   let sum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
   if(sum<=0){ sel.forEach(a=>a.weight=1/sel.length); }
   else sel.forEach(a=>a.weight=a.weight/sum);
 
-  // aplica pesos normalizados
   assets = assets.map(a=>{
     const f = sel.find(s=>s.symbol===a.symbol);
     return f ? {...a, weight:f.weight} : a;
@@ -567,68 +605,70 @@ function runSimulation(fast=false){
     samplePaths: 60
   });
 
-  worker.onmessage = (ev)=>{
-    spin(false);
-    const t1 = performance.now();
-    if(ev.data.error){ $("status").textContent = ev.data.error; toast(ev.data.error); return; }
+ worker.onmessage = (ev)=>{
+  spin(false);
+  const t1 = performance.now();
+  if(ev.data.error){ $("status").textContent = ev.data.error; toast(ev.data.error); return; }
 
-    const { xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: used } = ev.data;
+  const { xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: used } = ev.data;
+ 
+  const months = (captureParams().years||0) * 12;  
+  const invested = (captureParams().S0||0) + (captureParams().aport||0) * months;
+  const ir = Math.max(0, (captureParams().ir||0)) / 100;
 
-    // ==== IR (educacional) no lucro total ====
-    const paramsNow = captureParams();
-    const months   = (paramsNow.years||0) * 12;
-    const invested = (paramsNow.S0||0) + (paramsNow.aport||0) * months;
-    const ir       = Math.max(0, (paramsNow.ir||0)) / 100;
+  const finalsTaxed = new Float64Array(finals.length);
+  for(let i=0;i<finals.length;i++){
+    const v = finals[i];
+    const profit = Math.max(0, v - invested);
+    finalsTaxed[i] = invested + profit * (1 - ir);
+  }
 
-    const finalsTaxed = new Float64Array(finals.length);
-    for(let i=0;i<finals.length;i++){
-      const v = finals[i];
-      const profit = Math.max(0, v - invested);
-      finalsTaxed[i] = invested + profit * (1 - ir);
-    }
+  const meanTax = finalsTaxed.reduce((s,v)=>s+v,0)/finalsTaxed.length;
+  const sortedTax = Array.from(finalsTaxed).sort((a,b)=>a-b);
+  const medianTax = sortedTax.length%2
+      ? sortedTax[(sortedTax.length-1)/2]
+      : (sortedTax[sortedTax.length/2-1] + sortedTax[sortedTax.length/2]) / 2;
+  const p5Tax  = sortedTax[Math.floor((sortedTax.length-1)*0.05)];
+  const p95Tax = sortedTax[Math.floor((sortedTax.length-1)*0.95)];
 
-    // métricas pós-IR
-    const meanTax   = finalsTaxed.reduce((s,v)=>s+v,0)/finalsTaxed.length;
-    const sortedTax = Array.from(finalsTaxed).sort((a,b)=>a-b);
-    const medianTax = sortedTax.length%2
-        ? sortedTax[(sortedTax.length-1)/2]
-        : (sortedTax[sortedTax.length/2-1] + sortedTax[sortedTax.length/2]) / 2;
-    const p5Tax  = sortedTax[Math.floor((sortedTax.length-1)*0.05)];
-    const p95Tax = sortedTax[Math.floor((sortedTax.length-1)*0.95)];
 
-    const yearsEff   = Math.max(1, paramsNow.years||1);
-    const retAA_eff  = Math.pow(meanTax / Math.max(1, invested), 1/yearsEff) - 1;
-    const sharpe_eff = (retAA_eff - (paramsNow.rf||0)/100) / (volAA + 1e-12);
+  const yearsEff = Math.max(1, captureParams().years||1);
+  const retAA_eff = Math.pow(meanTax / Math.max(1, invested), 1/yearsEff) - 1;
 
-    // contribuição média por ativo ajustada por escala (aprox.)
-    const scale = mean > 0 ? (meanTax / mean) : 1;
-    const finalByAssetTax = Array.from(finalByAsset, v => v * scale);
+  const sharpe_eff = (retAA_eff - (captureParams().rf||0)/100) / (volAA + 1e-12);
 
-    // === UI ===
-    $("m_mean").textContent   = "R$ " + fmtBR(meanTax);
-    $("m_median").textContent = "R$ " + fmtBR(medianTax);
-    $("m_p").textContent      = `P5: R$ ${fmtBR(p5Tax)} | P95: R$ ${fmtBR(p95Tax)}`;
-    $("m_rv").textContent     = `${(retAA_eff*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
-    $("m_sharpe").textContent = sharpe_eff.toFixed(2);
+ 
+  const scale = mean > 0 ? (meanTax / mean) : 1;
+  const finalByAssetTax = Array.from(finalByAsset, v => v * scale);
 
-    const body = $("byAssetBody"); body.innerHTML = "";
-    used.forEach((a,i)=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${a.symbol}</td><td>${(a.weight*100).toFixed(1)}%</td>
-                      <td>${(+a.exp_return_aa).toFixed(2)}</td><td>${(+a.vol_1y_aa).toFixed(2)}</td>
-                      <td>R$ ${fmtBR(finalByAssetTax[i])}</td>`;
-      body.appendChild(tr);
-    });
+   $("m_mean").textContent   = "R$ " + fmtBR(meanTax);
+  $("m_median").textContent = "R$ " + fmtBR(medianTax);
+  $("m_p").textContent      = `P5: R$ ${fmtBR(p5Tax)} | P95: R$ ${fmtBR(p95Tax)}`;
+  $("m_rv").textContent     = `${(retAA_eff*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
+  $("m_sharpe").textContent = sharpe_eff.toFixed(2);
 
-    // Caminhos (linhas) desenhados com os valores acumulados (visuais idênticos); histograma usa finaisTaxed
-    drawCharts(xs, sampled, finalsTaxed);
+ 
+  const body = $("byAssetBody"); body.innerHTML = "";
+  used.forEach((a,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${a.symbol}</td><td>${(a.weight*100).toFixed(1)}%</td>
+                    <td>${(+a.exp_return_aa).toFixed(2)}</td><td>${(+a.vol_1y_aa).toFixed(2)}</td>
+                    <td>R$ ${fmtBR(finalByAssetTax[i])}</td>`;
+    body.appendChild(tr);
+  });
 
-    $("status").textContent = `Pronto em ${(t1 - t0).toFixed(0)} ms (${finals.length} caminhos). (IR aplicado)`;
-    toast("Simulação concluída (após IR)");
+  drawCharts(xs, sampled, finalsTaxed);
+
+  $("status").textContent = `Pronto em ${(t1 - t0).toFixed(0)} ms (${finals.length} caminhos). (IR aplicado)`;
+  toast("Simulação concluída (após IR)");
+};
+
+    drawCharts(xs, sampled, finals);
+    $("status").textContent = `Pronto em ${(t1 - t0).toFixed(0)} ms (${finals.length} caminhos).`;
+    toast("Simulação concluída");
   };
 }
 
-/* ========= Boot ========= */
 renderCatalog();
 assets = [
   {enabled:true, symbol:CATALOG[2].symbol, exp_return_aa:CATALOG[2].exp_return_aa, vol_1y_aa:CATALOG[2].vol_1y_aa, weight:0.5},
