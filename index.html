@@ -647,7 +647,7 @@ function runSimulation(fast=false){
     $("m_mean").textContent   = "R$ " + fmtBR(meanTax);
     $("m_median").textContent = "R$ " + fmtBR(medianTax);
     $("m_p").textContent      = `P5: R$ ${fmtBR(p5Tax)} | P95: R$ ${fmtBR(p95Tax)}`;
-    $("m_rv").textContent     = `${(retAA*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
+    $("m_rv").textContent     = `${(retAA_eff*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
     $("m_sharpe").textContent = sharpe_eff.toFixed(2);
 
 
