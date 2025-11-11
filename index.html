@@ -600,66 +600,67 @@ function runSimulation(fast=false){
     samplePaths: 60
   });
 
-  worker.onmessage = (ev)=>{
-    spin(false);
-    const t1 = performance.now();
-    if(ev.data.error){ $("status").textContent = ev.data.error; toast(ev.data.error); return; }
+worker.onmessage = (ev)=>{
+  spin(false);
+  const t1 = performance.now();
+  if(ev.data.error){ $("status").textContent = ev.data.error; toast(ev.data.error); return; }
 
-    const { xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: used } = ev.data;
+  const { xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: used } = ev.data;
 
-    // === Aplicar IR sobre o lucro (não altera Sharpe) ===
-    const months   = params.years * 12;
-    const invested = params.S0 + params.aport * months;
-    const ir       = Math.max(0, params.ir) / 100;
+  const params   = captureParams();
+  const months   = params.years * 12;
+  const invested = params.S0 + params.aport * months;
+  const ir       = Math.max(0, params.ir) / 100;
 
-    const finalsTaxed = new Float64Array(finals.length);
-    for(let i=0;i<finals.length;i++){
-      const v = finals[i];
-      const profit = Math.max(0, v - invested);
-      finalsTaxed[i] = invested + profit * (1 - ir);
-    }
+  const finalsTaxed = new Float64Array(finals.length);
+  for (let i = 0; i < finals.length; i++) {
+    const v = finals[i];
+    const profit = Math.max(0, v - invested);
+    finalsTaxed[i] = invested + profit * (1 - ir);
+  }
 
-    // métricas exibidas
-    $("m_mean").textContent   = "R$ " + fmtBR(finalsTaxed.reduce((s,v)=>s+v,0)/finalsTaxed.length);
+  const meanTax = finalsTaxed.reduce((s,v)=>s+v,0) / finalsTaxed.length;
 
-    // lucro médio após IR = média final após IR - total investido
-const profitMean = Math.max(0, meanTax - invested);
-$("m_profit").textContent = "R$ " + fmtBR(profitMean);
+  
+  const profitMean = Math.max(0, meanTax - invested);
 
-    const sortedTax = Array.from(finalsTaxed).sort((a,b)=>a-b);
-    const medianTax = sortedTax.length%2
-      ? sortedTax[(sortedTax.length-1)/2]
-      : (sortedTax[sortedTax.length/2-1] + sortedTax[sortedTax.length/2]) / 2;
-    const p5Tax  = sortedTax[Math.floor((sortedTax.length-1)*0.05)];
-    const p95Tax = sortedTax[Math.floor((sortedTax.length-1)*0.95)];
+  const sortedTax = Array.from(finalsTaxed).sort((a,b)=>a-b);
+  const medianTax = sortedTax.length % 2
+    ? sortedTax[(sortedTax.length-1)/2]
+    : (sortedTax[sortedTax.length/2-1] + sortedTax[sortedTax.length/2]) / 2;
+  const p5Tax  = sortedTax[Math.floor((sortedTax.length-1)*0.05)];
+  const p95Tax = sortedTax[Math.floor((sortedTax.length-1)*0.95)];
 
-    $("m_median").textContent = "R$ " + fmtBR(medianTax);
-    $("m_p").textContent      = `P5: R$ ${fmtBR(p5Tax)} | P95: R$ ${fmtBR(p95Tax)}`;
+  const yearsEff  = Math.max(1, params.years);
+  const retAA_eff = Math.pow(meanTax / Math.max(1, invested), 1/yearsEff) - 1;
 
-    // Sharpe e RV do modelo (únicos, sem IR)
-    $("m_rv").textContent     = `${(retAA*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
-    $("m_sharpe").textContent = sharpe.toFixed(2);
+  const sharpe_eff = (retAA_eff - params.rf/100) / (volAA + 1e-12);
 
-    // Tabela por ativo (escala pelo fator meanTax/mean)
-    const meanTax = finalsTaxed.reduce((s,v)=>s+v,0)/finalsTaxed.length;
-    const scale = mean > 0 ? (meanTax / mean) : 1;
-    const finalByAssetTax = Array.from(finalByAsset, v => v * scale);
+  const scale = mean > 0 ? (meanTax / mean) : 1;
+  const finalByAssetTax = Array.from(finalByAsset, v => v * scale);
 
-    const body = $("byAssetBody"); body.innerHTML = "";
-    used.forEach((a,i)=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${a.symbol}</td><td>${(a.weight*100).toFixed(1)}%</td>
-                      <td>${(+a.exp_return_aa).toFixed(2)}</td><td>${(+a.vol_1y_aa).toFixed(2)}</td>
-                      <td>R$ ${fmtBR(finalByAssetTax[i])}</td>`;
-      body.appendChild(tr);
-    });
+  $("m_mean").textContent   = "R$ " + fmtBR(meanTax);
+  $("m_profit").textContent = "R$ " + fmtBR(profitMean);
+  $("m_median").textContent = "R$ " + fmtBR(medianTax);
+  $("m_p").textContent      = `P5: R$ ${fmtBR(p5Tax)} | P95: R$ ${fmtBR(p95Tax)}`;
+  $("m_rv").textContent     = `${(retAA_eff*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
+  $("m_sharpe").textContent = sharpe_eff.toFixed(2);
 
-    // Gráficos com valores após IR
-    drawCharts(xs, sampled, finalsTaxed);
+  const body = $("byAssetBody"); body.innerHTML = "";
+  used.forEach((a,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${a.symbol}</td><td>${(a.weight*100).toFixed(1)}%</td>
+                    <td>${(+a.exp_return_aa).toFixed(2)}</td><td>${(+a.vol_1y_aa).toFixed(2)}</td>
+                    <td>R$ ${fmtBR(finalByAssetTax[i])}</td>`;
+    body.appendChild(tr);
+  });
 
-    $("status").textContent = `Pronto em ${(t1 - t0).toFixed(0)} ms (${finals.length} caminhos). (IR aplicado)`;
-    toast("Simulação concluída (após IR)");
-  };
+  drawCharts(xs, sampled, finalsTaxed);
+
+  $("status").textContent = `Pronto em ${(t1 - performance.now()).toFixed(0)} ms (${finals.length} caminhos). (IR aplicado)`;
+  toast("Simulação concluída (após IR)");
+};
+
 }
 
 /* ========= Boot ========= */
