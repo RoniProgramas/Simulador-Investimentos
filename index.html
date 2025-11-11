@@ -230,7 +230,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
         <div class="metric"><div class="label">Mediana final</div><div id="m_median" class="value">—</div></div>
         <div class="metric"><div class="label">P5 / P95</div><div id="m_p" class="value">—</div></div>
         <div class="metric"><div class="label">Ret. a.a. / Vol a.a.</div><div id="m_rv" class="value">—</div></div>
-        <div class="metric"><div class="label">Sharpe (aprox.)</div><div id="m_sharpe" class="value">—</div></div>
+        <div class="metric"><div class="label">Sharpe</div><div id="m_sharpe" class="value">—</div></div>
       </div>
 
       <div style="display:flex;gap:8px;align-items:center;margin-top:14px;margin-bottom:6px">
@@ -404,7 +404,7 @@ function normalizeWeights(){
   }
 }
 
-/* Web Worker */
+/* ========= Web Worker (Monte Carlo) ========= */
 const workerCode = `
   const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
   function monthlyRateFromAnnual(pctAA){ return Math.pow(1 + pctAA/100, 1/12) - 1; }
@@ -430,17 +430,19 @@ const workerCode = `
     const k = sel.length;
     if(k===0){ postMessage({error:"Nenhum ativo selecionado."}); return; }
 
+    // normaliza pesos
     let wsum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
     if(wsum<=0){ wsum = k; sel.forEach(a=>a.weight=1/k); } else sel.forEach(a=>a.weight=a.weight/wsum);
 
+    // parâmetros mensais
     const muM = sel.map(a=>monthlyRateFromAnnual(a.exp_return_aa));
     const sigM = sel.map(a=>monthlyVolFromAnnual(a.vol_1y_aa));
-    const w    = sel.map(a=>a.weight);
+    const w = sel.map(a=>a.weight);
 
-
+    // covariância (mensal) + cholesky com jitter
     const C = Array.from({length:k},()=>Array(k).fill(0));
     for(let i=0;i<k;i++)for(let j=0;j<k;j++) C[i][j] = (i===j? sigM[i]*sigM[i] : rho*sigM[i]*sigM[j]);
-    let jitter=1e-12, L=null;
+    let jitter=1e-12; let L=null;
     while(true){
       try{
         const Cj = C.map((row,i)=>row.map((v,j)=> v + (i===j?jitter:0)));
@@ -458,67 +460,55 @@ const workerCode = `
     const finals = new Float64Array(npaths);
     const finalByAsset = new Float64Array(k);
 
-    // acumuladores para log-returns do portfólio (sem aporte)
-    let sumL = 0, sumL2 = 0, nL = 0;
-
-    for (let p = 0; p < npaths; p++) {
-      let S = w.map(wi => S0 * wi);
-      let prev_total = S0;
-
-      for (let t = 1; t <= months; t++) {
+    for(let p=0;p<npaths;p++){
+      let S = w.map(wi=>S0*wi);
+      for(let t=1;t<=months;t++){
         const u = Array.from({length:k},()=>randn(rng));
         const z = L.map(row=>row.reduce((s,v,idx)=>s+v*u[idx],0));
-
-        for (let i = 0; i < k; i++) {
+        for(let i=0;i<k;i++){
           const growth = Math.exp((muM[i] - 0.5*sigM[i]*sigM[i]) + sigM[i]*z[i]);
           S[i] *= growth;
         }
-
-        const total_after = S.reduce((s,v)=>s+v,0);
-
-        const rlog = Math.log(total_after / prev_total);
-        if (isFinite(rlog)) { sumL += rlog; sumL2 += rlog*rlog; nL++; }
-
-      
-        if (p < keep) {
-          sampled[p][t] = aport > 0 ? total_after + aport : total_after;
-        }
-
-        // aplica aporte ao capital para o próximo mês
-        if (aport > 0) {
-          for (let i = 0; i < k; i++) S[i] += aport * w[i];
-          prev_total = total_after + aport;
-        } else {
-          prev_total = total_after;
+        if(aport>0) for(let i=0;i<k;i++) S[i] += aport*w[i];
+        if(p<keep){
+          const total = S.reduce((s,v)=>s+v,0);
+          sampled[p][t] = total;
         }
       }
-
       finals[p] = S.reduce((s,v)=>s+v,0);
       for(let i=0;i<k;i++) finalByAsset[i]+=S[i];
     }
     for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
 
-  
+    // ----- métricas -----
+    // distribuição dos finais
     const mean = finals.reduce((s,v)=>s+v,0)/npaths;
     const sorted = Array.from(finals).sort((a,b)=>a-b);
-    const median = sorted.length%2? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
+    const median = sorted.length%2
+      ? sorted[(sorted.length-1)/2]
+      : (sorted[sorted.length/2-1] + sorted[sorted.length/2]) / 2;
     const p5  = sorted[Math.floor((sorted.length-1)*0.05)];
     const p95 = sorted[Math.floor((sorted.length-1)*0.95)];
 
-    
-    const mean_log = nL>0 ? (sumL / nL) : 0;
-    const var_log  = nL>1 ? (sumL2 / nL) - mean_log*mean_log : 0;
-    const std_log  = Math.sqrt(Math.max(0,var_log));
+    // Sharpe do modelo (coerente): retorno esperado mensal = w·muM, var mensal = wᵀ C w
+    const mean_m_model = w.reduce((s, wi, i) => s + wi * muM[i], 0);
 
-    const retAA = Math.exp(mean_log * 12) - 1;
-    const volAA = std_log * Math.sqrt(12);
+    let var_m_model = 0;
+    for (let i = 0; i < w.length; i++) {
+      for (let j = 0; j < w.length; j++) {
+        var_m_model += w[i] * C[i][j] * w[j];
+      }
+    }
+    var_m_model = Math.max(0, var_m_model);
+    const std_m_model = Math.sqrt(var_m_model);
+
+    const retAA = Math.pow(1 + mean_m_model, 12) - 1;
+    const volAA = std_m_model * Math.sqrt(12);
     const sharpe = (retAA - rfAA) / (volAA + 1e-12);
 
     postMessage({ xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: sel });
   };
 `;
-
-
 const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
 
 /* ========= Gráficos ========= */
@@ -541,10 +531,8 @@ function drawCharts(xs, sampled, finals){
     data: { labels: xs, datasets },
     options: {
       plugins: { legend: { display: false } },
-      scales: {
-        x: { title: { display: true, text: "Mês" } },
-        y: { title: { display: true, text: "Valor (R$)" } }
-      }
+      scales: { x: { title: { display: true, text: "Mês" } },
+                y: { title: { display: true, text: "Valor (R$)" } } }
     }
   });
 
@@ -559,7 +547,8 @@ function drawCharts(xs, sampled, finals){
     data:{labels:centers, datasets:[{label:"Valor final (após IR)", data:counts}]},
     options:{
       plugins:{legend:{display:false}},
-      scales:{ x:{title:{display:true,text:"Valor final (faixa)"}}, y:{title:{display:true,text:"Frequência"}} }
+      scales:{ x:{title:{display:true,text:"Valor final (faixa)"}},
+               y:{title:{display:true,text:"Frequência"}} }
     }
   });
 }
@@ -617,7 +606,7 @@ function runSimulation(fast=false){
 
     const { xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: used } = ev.data;
 
-    // === Aplicar IR sobre o lucro usando snapshot 'params' ===
+    // === Aplicar IR sobre o lucro (não altera Sharpe) ===
     const months   = params.years * 12;
     const invested = params.S0 + params.aport * months;
     const ir       = Math.max(0, params.ir) / 100;
@@ -629,27 +618,26 @@ function runSimulation(fast=false){
       finalsTaxed[i] = invested + profit * (1 - ir);
     }
 
-    const meanTax = finalsTaxed.reduce((s,v)=>s+v,0)/finalsTaxed.length;
+    // métricas exibidas
+    $("m_mean").textContent   = "R$ " + fmtBR(finalsTaxed.reduce((s,v)=>s+v,0)/finalsTaxed.length);
     const sortedTax = Array.from(finalsTaxed).sort((a,b)=>a-b);
     const medianTax = sortedTax.length%2
-        ? sortedTax[(sortedTax.length-1)/2]
-        : (sortedTax[sortedTax.length/2-1] + sortedTax[sortedTax.length/2]) / 2;
+      ? sortedTax[(sortedTax.length-1)/2]
+      : (sortedTax[sortedTax.length/2-1] + sortedTax[sortedTax.length/2]) / 2;
     const p5Tax  = sortedTax[Math.floor((sortedTax.length-1)*0.05)];
     const p95Tax = sortedTax[Math.floor((sortedTax.length-1)*0.95)];
 
-    const yearsEff = Math.max(1, params.years);
-    const retAA_eff = Math.pow(meanTax / Math.max(1, invested), 1/yearsEff) - 1;
-    const sharpe_eff = (retAA_eff - params.rf/100) / (volAA + 1e-12);
-
-    const scale = mean > 0 ? (meanTax / mean) : 1;
-    const finalByAssetTax = Array.from(finalByAsset, v => v * scale);
-
-    $("m_mean").textContent   = "R$ " + fmtBR(meanTax);
     $("m_median").textContent = "R$ " + fmtBR(medianTax);
     $("m_p").textContent      = `P5: R$ ${fmtBR(p5Tax)} | P95: R$ ${fmtBR(p95Tax)}`;
-    $("m_rv").textContent     = `${(retAA_eff*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
-    $("m_sharpe").textContent = sharpe_eff.toFixed(2);
 
+    // Sharpe e RV do modelo (únicos, sem IR)
+    $("m_rv").textContent     = `${(retAA*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
+    $("m_sharpe").textContent = sharpe.toFixed(2);
+
+    // Tabela por ativo (escala pelo fator meanTax/mean)
+    const meanTax = finalsTaxed.reduce((s,v)=>s+v,0)/finalsTaxed.length;
+    const scale = mean > 0 ? (meanTax / mean) : 1;
+    const finalByAssetTax = Array.from(finalByAsset, v => v * scale);
 
     const body = $("byAssetBody"); body.innerHTML = "";
     used.forEach((a,i)=>{
