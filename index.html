@@ -141,7 +141,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
   box-shadow:var(--shadow);
 }
 
-.metrics{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-top:10px}
+.metrics{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin-top:10px}
 @media (max-width:1024px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .metric{
   background:var(--panel); border:1px solid var(--stroke); border-radius:12px; padding:12px; text-align:center
@@ -228,6 +228,7 @@ tbody td+td{border-left:1px solid var(--stroke)}
       <div class="metrics">
         <div class="metric"><div class="label">Média final</div><div id="m_mean" class="value">—</div></div>
         <div class="metric"><div class="label">Mediana final</div><div id="m_median" class="value">—</div></div>
+        <div class="metric"><div class="label">Lucro final (médio)</div><div id="m_profit" class="value">—</div></div>
         <div class="metric"><div class="label">P5 / P95</div><div id="m_p" class="value">—</div></div>
         <div class="metric"><div class="label">Ret. a.a. / Vol a.a.</div><div id="m_rv" class="value">—</div></div>
         <div class="metric"><div class="label">Sharpe</div><div id="m_sharpe" class="value">—</div></div>
@@ -620,6 +621,11 @@ function runSimulation(fast=false){
 
     // métricas exibidas
     $("m_mean").textContent   = "R$ " + fmtBR(finalsTaxed.reduce((s,v)=>s+v,0)/finalsTaxed.length);
+
+    // lucro médio após IR = média final após IR - total investido
+const profitMean = Math.max(0, meanTax - invested);
+$("m_profit").textContent = "R$ " + fmtBR(profitMean);
+
     const sortedTax = Array.from(finalsTaxed).sort((a,b)=>a-b);
     const medianTax = sortedTax.length%2
       ? sortedTax[(sortedTax.length-1)/2]
