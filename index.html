@@ -430,16 +430,14 @@ const workerCode = `
     const k = sel.length;
     if(k===0){ postMessage({error:"Nenhum ativo selecionado."}); return; }
 
-    // normaliza pesos em 1
     let wsum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
     if(wsum<=0){ wsum = k; sel.forEach(a=>a.weight=1/k); } else sel.forEach(a=>a.weight=a.weight/wsum);
 
-   
     const muM = sel.map(a=>monthlyRateFromAnnual(a.exp_return_aa));
     const sigM = sel.map(a=>monthlyVolFromAnnual(a.vol_1y_aa));
     const w    = sel.map(a=>a.weight);
 
-    
+
     const C = Array.from({length:k},()=>Array(k).fill(0));
     for(let i=0;i<k;i++)for(let j=0;j<k;j++) C[i][j] = (i===j? sigM[i]*sigM[i] : rho*sigM[i]*sigM[j]);
     let jitter=1e-12, L=null;
@@ -460,6 +458,7 @@ const workerCode = `
     const finals = new Float64Array(npaths);
     const finalByAsset = new Float64Array(k);
 
+    // acumuladores para log-returns do portfólio (sem aporte)
     let sumL = 0, sumL2 = 0, nL = 0;
 
     for (let p = 0; p < npaths; p++) {
@@ -475,16 +474,17 @@ const workerCode = `
           S[i] *= growth;
         }
 
-
         const total_after = S.reduce((s,v)=>s+v,0);
 
-        const rlog = Math.log(total_after / prev_total); 
+        const rlog = Math.log(total_after / prev_total);
         if (isFinite(rlog)) { sumL += rlog; sumL2 += rlog*rlog; nL++; }
 
+      
         if (p < keep) {
           sampled[p][t] = aport > 0 ? total_after + aport : total_after;
         }
 
+        // aplica aporte ao capital para o próximo mês
         if (aport > 0) {
           for (let i = 0; i < k; i++) S[i] += aport * w[i];
           prev_total = total_after + aport;
@@ -498,17 +498,17 @@ const workerCode = `
     }
     for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
 
-    // métricas de distribuição dos finais
+  
     const mean = finals.reduce((s,v)=>s+v,0)/npaths;
     const sorted = Array.from(finals).sort((a,b)=>a-b);
     const median = sorted.length%2? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
     const p5  = sorted[Math.floor((sorted.length-1)*0.05)];
     const p95 = sorted[Math.floor((sorted.length-1)*0.95)];
 
-    // retorno/vol MENSAIS empíricos (sem aporte), anualizados
-    const mean_m = nL>0 ? (sumL / nL) : 0;
-    const var_m  = nL>1 ? (sumL2 / nL) - mean_m*mean_m : 0;
-    const std_m  = Math.sqrt(Math.max(0,var_m));
+    
+    const mean_log = nL>0 ? (sumL / nL) : 0;
+    const var_log  = nL>1 ? (sumL2 / nL) - mean_log*mean_log : 0;
+    const std_log  = Math.sqrt(Math.max(0,var_log));
 
     const retAA = Math.exp(mean_log * 12) - 1;
     const volAA = std_log * Math.sqrt(12);
@@ -517,6 +517,7 @@ const workerCode = `
     postMessage({ xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: sel });
   };
 `;
+
 
 const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
 
