@@ -404,7 +404,7 @@ function normalizeWeights(){
   }
 }
 
-/* ========= Web Worker (Monte Carlo) ========= */
+/* Web Worker */
 const workerCode = `
   const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
   function monthlyRateFromAnnual(pctAA){ return Math.pow(1 + pctAA/100, 1/12) - 1; }
@@ -430,19 +430,19 @@ const workerCode = `
     const k = sel.length;
     if(k===0){ postMessage({error:"Nenhum ativo selecionado."}); return; }
 
-    // normaliza pesos
+    // normaliza pesos em 1
     let wsum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
     if(wsum<=0){ wsum = k; sel.forEach(a=>a.weight=1/k); } else sel.forEach(a=>a.weight=a.weight/wsum);
 
-    // parâmetros mensais
+   
     const muM = sel.map(a=>monthlyRateFromAnnual(a.exp_return_aa));
     const sigM = sel.map(a=>monthlyVolFromAnnual(a.vol_1y_aa));
-    const w = sel.map(a=>a.weight);
+    const w    = sel.map(a=>a.weight);
 
-    // covariância (mensal) + cholesky com jitter
+    
     const C = Array.from({length:k},()=>Array(k).fill(0));
     for(let i=0;i<k;i++)for(let j=0;j<k;j++) C[i][j] = (i===j? sigM[i]*sigM[i] : rho*sigM[i]*sigM[j]);
-    let jitter=1e-12; let L=null;
+    let jitter=1e-12, L=null;
     while(true){
       try{
         const Cj = C.map((row,i)=>row.map((v,j)=> v + (i===j?jitter:0)));
@@ -459,61 +459,65 @@ const workerCode = `
     for(let j=0;j<keep;j++) sampled[j][0] = S0;
     const finals = new Float64Array(npaths);
     const finalByAsset = new Float64Array(k);
+
     let sumR = 0, sumR2 = 0, nR = 0;
 
-for (let p = 0; p < npaths; p++) {
-  let S = w.map(wi => S0 * wi);
-  let prevTotal = S.reduce((s,v)=>s+v,0); // total no t=0
+    for (let p = 0; p < npaths; p++) {
+      let S = w.map(wi => S0 * wi);
+      let prev_total = S0;
 
-  for (let t = 1; t <= months; t++) {
-    const u = Array.from({ length: k }, () => randn(rng));
-    const z = L.map(row => row.reduce((s, v, idx) => s + v * u[idx], 0));
+      for (let t = 1; t <= months; t++) {
+        const u = Array.from({length:k},()=>randn(rng));
+        const z = L.map(row=>row.reduce((s,v,idx)=>s+v*u[idx],0));
 
-    for (let i = 0; i < k; i++) {
-      const growth = Math.exp((muM[i] - 0.5 * sigM[i] * sigM[i]) + sigM[i] * z[i]);
-      S[i] *= growth;
+        for (let i = 0; i < k; i++) {
+          const growth = Math.exp((muM[i] - 0.5*sigM[i]*sigM[i]) + sigM[i]*z[i]);
+          S[i] *= growth;
+        }
+
+
+        const total_after = S.reduce((s,v)=>s+v,0);
+
+        const r = total_after / prev_total - 1;
+        if (isFinite(r)) { sumR += r; sumR2 += r*r; nR++; }
+
+        if (p < keep) {
+          sampled[p][t] = aport > 0 ? total_after + aport : total_after;
+        }
+
+        if (aport > 0) {
+          for (let i = 0; i < k; i++) S[i] += aport * w[i];
+          prev_total = total_after + aport;
+        } else {
+          prev_total = total_after;
+        }
+      }
+
+      finals[p] = S.reduce((s,v)=>s+v,0);
+      for(let i=0;i<k;i++) finalByAsset[i]+=S[i];
     }
-
-    if (aport > 0) for (let i = 0; i < k; i++) S[i] += aport * w[i];
-
-    const total = S.reduce((s,v)=>s+v,0);
-
-    if (prevTotal > 0) {
-      const r = (total - prevTotal - aport) / prevTotal;
-      sumR  += r;
-      sumR2 += r * r;
-      nR++;
-    }
-
-    if (p < keep) sampled[p][t] = total;
-
-    prevTotal = total;
-  }
-
-  finals[p] = S.reduce((s,v)=>s+v,0);
-  for (let i = 0; i < k; i++) finalByAsset[i] += S[i];
-}
-
     for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
-    
-const mean = finals.reduce((s,v)=>s+v,0) / npaths;
-const sorted = Array.from(finals).sort((a,b)=>a-b);
-const median = sorted.length % 2
-  ? sorted[(sorted.length-1)/2]
-  : (sorted[sorted.length/2-1] + sorted[sorted.length/2]) / 2;
-const p5  = sorted[Math.floor((sorted.length-1)*0.05)];
-const p95 = sorted[Math.floor((sorted.length-1)*0.95)];
 
-const mean_m = nR > 0 ? (sumR / nR) : 0;
-const var_m  = nR > 0 ? (sumR2 / nR) - mean_m*mean_m : 0;
-const std_m  = Math.sqrt(Math.max(0, var_m));
-const retAA  = Math.pow(1 + mean_m, 12) - 1;
-const volAA  = std_m * Math.sqrt(12);
-const sharpe = (retAA - rfAA) / (volAA + 1e-12);
+    // métricas de distribuição dos finais
+    const mean = finals.reduce((s,v)=>s+v,0)/npaths;
+    const sorted = Array.from(finals).sort((a,b)=>a-b);
+    const median = sorted.length%2? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
+    const p5  = sorted[Math.floor((sorted.length-1)*0.05)];
+    const p95 = sorted[Math.floor((sorted.length-1)*0.95)];
+
+    // retorno/vol MENSAIS empíricos (sem aporte), anualizados
+    const mean_m = nR>0 ? (sumR / nR) : 0;
+    const var_m  = nR>1 ? (sumR2 / nR) - mean_m*mean_m : 0;
+    const std_m  = Math.sqrt(Math.max(0,var_m));
+
+    const retAA = Math.pow(1 + mean_m, 12) - 1;
+    const volAA = std_m * Math.sqrt(12);
+    const sharpe = (retAA - rfAA) / (volAA + 1e-12);
 
     postMessage({ xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: sel });
   };
 `;
+
 const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})));
 
 /* ========= Gráficos ========= */
