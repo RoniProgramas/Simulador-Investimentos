@@ -459,51 +459,57 @@ const workerCode = `
     for(let j=0;j<keep;j++) sampled[j][0] = S0;
     const finals = new Float64Array(npaths);
     const finalByAsset = new Float64Array(k);
+    let sumR = 0, sumR2 = 0, nR = 0;
 
-    for(let p=0;p<npaths;p++){
-      let S = w.map(wi=>S0*wi);
-      for(let t=1;t<=months;t++){
-        const u = Array.from({length:k},()=>randn(rng));
-        const z = L.map(row=>row.reduce((s,v,idx)=>s+v*u[idx],0));
-        for(let i=0;i<k;i++){
-          const growth = Math.exp((muM[i] - 0.5*sigM[i]*sigM[i]) + sigM[i]*z[i]);
-          S[i] *= growth;
-        }
-        if(aport>0) for(let i=0;i<k;i++) S[i] += aport*w[i];
-        if(p<keep){
-          const total = S.reduce((s,v)=>s+v,0);
-          sampled[p][t] = total;
-        }
-      }
-      finals[p] = S.reduce((s,v)=>s+v,0);
-      for(let i=0;i<k;i++) finalByAsset[i]+=S[i];
+for (let p = 0; p < npaths; p++) {
+  let S = w.map(wi => S0 * wi);
+  let prevTotal = S.reduce((s,v)=>s+v,0); // total no t=0
+
+  for (let t = 1; t <= months; t++) {
+    const u = Array.from({ length: k }, () => randn(rng));
+    const z = L.map(row => row.reduce((s, v, idx) => s + v * u[idx], 0));
+
+    for (let i = 0; i < k; i++) {
+      const growth = Math.exp((muM[i] - 0.5 * sigM[i] * sigM[i]) + sigM[i] * z[i]);
+      S[i] *= growth;
     }
+
+    if (aport > 0) for (let i = 0; i < k; i++) S[i] += aport * w[i];
+
+    const total = S.reduce((s,v)=>s+v,0);
+
+    if (prevTotal > 0) {
+      const r = (total - prevTotal - aport) / prevTotal;
+      sumR  += r;
+      sumR2 += r * r;
+      nR++;
+    }
+
+    if (p < keep) sampled[p][t] = total;
+
+    prevTotal = total;
+  }
+
+  finals[p] = S.reduce((s,v)=>s+v,0);
+  for (let i = 0; i < k; i++) finalByAsset[i] += S[i];
+}
+
     for(let i=0;i<k;i++) finalByAsset[i]/=npaths;
+    
+const mean = finals.reduce((s,v)=>s+v,0) / npaths;
+const sorted = Array.from(finals).sort((a,b)=>a-b);
+const median = sorted.length % 2
+  ? sorted[(sorted.length-1)/2]
+  : (sorted[sorted.length/2-1] + sorted[sorted.length/2]) / 2;
+const p5  = sorted[Math.floor((sorted.length-1)*0.05)];
+const p95 = sorted[Math.floor((sorted.length-1)*0.95)];
 
-    // métricas a partir da 1ª trajetória (aproximação para retorno médio)
-    const rets = [];
-    for(let t=1;t<=months;t++){
-      const prev = sampled[0][t-1], cur = sampled[0][t];
-      if(prev>0) rets.push(cur/prev - 1);
-    }
-    const mean = finals.reduce((s,v)=>s+v,0)/npaths;
-    const sorted = Array.from(finals).sort((a,b)=>a-b);
-    const median = sorted.length%2? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
-    const p5 = sorted[Math.floor((sorted.length-1)*0.05)];
-    const p95 = sorted[Math.floor((sorted.length-1)*0.95)];
-    const mean_m = rets.reduce((s,v)=>s+v,0)/rets.length;
-
-    // volatilidade do PORTFÓLIO: wᵀ C w (mensal) → anual
-    let volM2 = 0;
-    for (let i = 0; i < w.length; i++) {
-      for (let j = 0; j < w.length; j++) {
-        volM2 += w[i] * C[i][j] * w[j];
-      }
-    }
-    const std_m = Math.sqrt(Math.max(0, volM2));
-    const retAA = Math.pow(1+mean_m,12)-1;
-    const volAA = std_m*Math.sqrt(12);
-    const sharpe = (retAA - rfAA) / (volAA + 1e-12);
+const mean_m = nR > 0 ? (sumR / nR) : 0;
+const var_m  = nR > 0 ? (sumR2 / nR) - mean_m*mean_m : 0;
+const std_m  = Math.sqrt(Math.max(0, var_m));
+const retAA  = Math.pow(1 + mean_m, 12) - 1;
+const volAA  = std_m * Math.sqrt(12);
+const sharpe = (retAA - rfAA) / (volAA + 1e-12);
 
     postMessage({ xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: sel });
   };
@@ -636,8 +642,9 @@ function runSimulation(fast=false){
     $("m_mean").textContent   = "R$ " + fmtBR(meanTax);
     $("m_median").textContent = "R$ " + fmtBR(medianTax);
     $("m_p").textContent      = `P5: R$ ${fmtBR(p5Tax)} | P95: R$ ${fmtBR(p95Tax)}`;
-    $("m_rv").textContent     = `${(retAA_eff*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
-    $("m_sharpe").textContent = sharpe_eff.toFixed(2);
+    $("m_rv").textContent     = `${(retAA*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
+    $("m_sharpe").textContent = sharpe.toFixed(2);
+
 
     const body = $("byAssetBody"); body.innerHTML = "";
     used.forEach((a,i)=>{
