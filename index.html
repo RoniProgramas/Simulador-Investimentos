@@ -460,7 +460,7 @@ const workerCode = `
     const finals = new Float64Array(npaths);
     const finalByAsset = new Float64Array(k);
 
-    let sumR = 0, sumR2 = 0, nR = 0;
+    let sumL = 0, sumL2 = 0, nL = 0;
 
     for (let p = 0; p < npaths; p++) {
       let S = w.map(wi => S0 * wi);
@@ -478,8 +478,8 @@ const workerCode = `
 
         const total_after = S.reduce((s,v)=>s+v,0);
 
-        const r = total_after / prev_total - 1;
-        if (isFinite(r)) { sumR += r; sumR2 += r*r; nR++; }
+        const rlog = Math.log(total_after / prev_total); 
+        if (isFinite(rlog)) { sumL += rlog; sumL2 += rlog*rlog; nL++; }
 
         if (p < keep) {
           sampled[p][t] = aport > 0 ? total_after + aport : total_after;
@@ -506,12 +506,12 @@ const workerCode = `
     const p95 = sorted[Math.floor((sorted.length-1)*0.95)];
 
     // retorno/vol MENSAIS empíricos (sem aporte), anualizados
-    const mean_m = nR>0 ? (sumR / nR) : 0;
-    const var_m  = nR>1 ? (sumR2 / nR) - mean_m*mean_m : 0;
+    const mean_m = nL>0 ? (sumL / nL) : 0;
+    const var_m  = nL>1 ? (sumL2 / nL) - mean_m*mean_m : 0;
     const std_m  = Math.sqrt(Math.max(0,var_m));
 
-    const retAA = Math.pow(1 + mean_m, 12) - 1;
-    const volAA = std_m * Math.sqrt(12);
+    const retAA = Math.exp(mean_log * 12) - 1;
+    const volAA = std_log * Math.sqrt(12);
     const sharpe = (retAA - rfAA) / (volAA + 1e-12);
 
     postMessage({ xs, sampled, finals, mean, median, p5, p95, retAA, volAA, sharpe, finalByAsset, assets: sel });
@@ -647,7 +647,7 @@ function runSimulation(fast=false){
     $("m_median").textContent = "R$ " + fmtBR(medianTax);
     $("m_p").textContent      = `P5: R$ ${fmtBR(p5Tax)} | P95: R$ ${fmtBR(p95Tax)}`;
     $("m_rv").textContent     = `${(retAA*100).toFixed(2)}% / ${(volAA*100).toFixed(2)}%`;
-    $("m_sharpe").textContent = sharpe.toFixed(2);
+    $("m_sharpe").textContent = sharpe_eff.toFixed(2);
 
 
     const body = $("byAssetBody"); body.innerHTML = "";
