@@ -210,7 +210,13 @@ tbody td+td{border-left:1px solid var(--stroke)}
         <div><label>Risk-free a.a. (%)</label><input id="rf" type="number" value="6" step="0.1"></div>
       </div>
       <div class="row" style="margin-top:10px">
-        <div><label>Seed</label><input id="seed" type="number" value="12345" step="1"></div>
+        <div>
+  <label style="display:flex;align-items:center;gap:8px">
+    <input type="checkbox" id="autoSeed" checked>
+    Seed aleatória a cada simulação
+  </label>
+  <input id="seed" type="number" value="12345" step="1" disabled>
+</div>
         <div><label>Valor inicial (R$)</label><input id="S0" type="number" value="10000" step="100"></div>
         <div><label>Aporte mensal (R$)</label><input id="aport" type="number" value="0" step="50"></div>
         <div><label>IR sobre lucro (%)</label><input id="ir" type="number" value="0" step="0.5" min="0" max="30"></div>
@@ -279,6 +285,20 @@ const $ = (id) => document.getElementById(id);
 const fmtBR = (x) => x.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+function newSeed(){
+  if (window.crypto && crypto.getRandomValues) {
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    return buf[0] >>> 0;
+  }
+
+  return (Math.random() * 0xFFFFFFFF) >>> 0;
+}
+  
+$("autoSeed").addEventListener("change", (e)=>{
+  $("seed").disabled = e.target.checked;
+});
+ 
 /* ========= Catálogo de ativos ========= */
 const CATALOG = [
   {symbol:"PETR4 (Ação Petrobras)",     exp_return_aa:17.0, vol_1y_aa:34.0},
@@ -561,6 +581,7 @@ function captureParams(){
     npaths: clamp(parseInt($("npaths").value)||5000, 10, 50000),
     rho: clamp(parseFloat($("rho").value)||0.2, -0.9, 0.95),
     rf: parseFloat($("rf").value)||6,
+    autoSeed: !!$("autoSeed").checked,
     seed: parseInt($("seed").value)||12345,
     S0: parseFloat($("S0").value)||10000,
     aport: parseFloat($("aport").value)||0,
@@ -572,7 +593,7 @@ function runSimulation(fast=false){
   const params = captureParams();
   const sel = assets.filter(a=>a.enabled);
   if(sel.length===0){ $("status").textContent="Selecione/adicione pelo menos um ativo."; return; }
-
+  const seedToUse = params.autoSeed ? newSeed() : params.seed;
   // normaliza pesos entre habilitados
   let sum = sel.reduce((s,a)=>s + (isFinite(a.weight)?a.weight:0), 0);
   if(sum<=0){ sel.forEach(a=>a.weight=1/sel.length); }
